@@ -25,7 +25,8 @@ from CAFE.get_fit_sequence import get_fit_sequence
 
 cafeio = cafe_io()
 
-#import ipdb
+import ipdb
+
 
 def cafe_grinder(self, params, spec, phot):
     """
@@ -43,6 +44,8 @@ def cafe_grinder(self, params, spec, phot):
     niter = 1
     show = False
     f_pert = 1.01
+
+    if phot is not None: phot['weight'] = calc_phot_weights(spec, phot)
     
     while acceptFit is False:
         
@@ -106,6 +109,22 @@ def cafe_grinder(self, params, spec, phot):
 
     return result
 
+
+def scale_flux_params(params, factor):
+    """
+    Scales flux-dependent parameters (values, bounds, and errors) by a factor.
+    Target parameters ending in '_FLX' (Continuum) or '_Peak' (Features).
+    """
+    for par in params:
+        # Check if parameter is a Flux or a Peak
+        if par.endswith('_Peak'):
+            # Scale Value
+            params[par].value *= factor
+            # Scale Errors (if they exist)
+            if params[par].stderr is not None:
+                params[par].stderr *= factor
+
+    return params
 
 
 
@@ -186,7 +205,8 @@ class cubemod:
                  init_parcube=False,
                  cont_profs=None,
                  force_all_lines=False,
-                 pattern=None):
+                 pattern=None,
+                 norm_factor=1.):
         """
         Main function setting up the parameters and profiles for cafe_grinder()
         """
@@ -244,20 +264,26 @@ class cubemod:
         
         start_cube = time.time()
         spax = 1
+        print(f"Normalizing spectra by: {norm_factor:.4e}")        
         for snr_ind in zip(ind_seq[0], ind_seq[1]): # (y,x)
 
             wave, flux, flux_unc, bandname, mask = mask_spec(self, x=snr_ind[1], y=snr_ind[0])
-            weight = 1./flux_unc**2
+
+            # Scale Data
+            flux_norm = flux / norm_factor
+            flux_unc_norm = flux_unc / norm_factor
+            weight = 1./flux_unc_norm**2        
 
             if np.isnan(flux).any():
                 #ipdb.set_trace()
                 raise ValueError('Some of the flux values in the spectrum are NaN, which should not happen')
             
-            spec = Spectrum1D(spectral_axis=wave*u.micron, flux=flux*u.Jy, uncertainty=StdDevUncertainty(flux_unc), redshift=self.z)
-            spec_dict = {'wave':wave, 'flux':flux, 'flux_unc':flux_unc, 'weight':weight}
+            spec = Spectrum1D(spectral_axis=wave*u.micron, flux=flux_norm*u.Jy, uncertainty=StdDevUncertainty(flux_unc_norm), redshift=self.z)
+            spec_dict = {'wave':wave, 'flux':flux_norm, 'flux_unc':flux_unc_norm, 'weight':weight}
             
             print('##############################################################################################################')
             print('Regenerating parameter object for current spaxel:',np.flip(snr_ind), '(', spax, '/', len(ind_seq[0]), ')')        
+
             param_gen = CAFE_param_generator(spec, inparfile, optfile, cafe_path=self.cafe_dir)
             init_params = param_gen.make_parobj(force_all=force_all_lines)
             
@@ -268,6 +294,7 @@ class cubemod:
             #if spax == 1:
             #    if 'AGN' in inparfile: inparfile.replace('AGN', 'SB')
             
+            # Handle Parameter Initialization from previous spaxels or parcube
             # If it's not the first spaxel
             if snr_ind != (ind_seq[0][0], ind_seq[1][0]):
                 print('Current spaxel',np.flip(snr_ind), 'will be initialized with results from spaxel',
@@ -283,6 +310,10 @@ class cubemod:
                                              ref_ind_seq[0,snr_ind[0],snr_ind[1]],
                                              init_parobj=init_params) # indexation is (x=1,y=0)
                 
+                # Cube_params are in unscaled units but the current spec and default init_params are normalized
+                # We must normalize the cube_params before updating param_gen
+                cube_params = scale_flux_params(cube_params, 1.0/norm_factor)
+
                 # The params file is regenerated but with the VARY, LIMS and ARG reset based on the new VALUES injected
                 params = param_gen.make_parobj(parobj_update=cube_params, get_all=True, init_parobj=init_params)
 
@@ -290,6 +321,8 @@ class cubemod:
                 if init_parcube is not False:
                     print('The params will be set to the parameters of the parcube provided for initialization')
                     cube_params = parcube2parobj(init_parcube, init_parobj=init_params)
+                    #Same here, init_parcube is unscaled, need to normalize
+                    cube_params = scale_flux_params(cube_params, 1.0/norm_factor)
                     params = param_gen.make_parobj(parobj_update=cube_params, get_all=True, init_parobj=init_params)
                 else:
                     params = init_params
@@ -297,12 +330,16 @@ class cubemod:
 
             unfixed_params = [True if params[par].vary == True else False for par in params.keys()]
             print('Fitting',unfixed_params.count(True), 'unfixed parameters, out of the', len(params), 'defined in the parameter object')
+
             # Fit the spectrum
             result = cafe_grinder(self, params, spec_dict, None)
             print('The VGRAD of the current spaxel is:',result.params['VGRAD'].value, '[km/s]')
 
+            #Unscale parameters
+            final_params = scale_flux_params(result.params, norm_factor)
+
             # Inject the result into the parameter cube
-            parcube = parobj2parcube(result.params, parcube, snr_ind[1], snr_ind[0]) # indexation is (x,y)
+            parcube = parobj2parcube(final_params, parcube, snr_ind[1], snr_ind[0]) # indexation is (x,y)
 
             spax += 1
             
@@ -473,8 +510,8 @@ class specmod:
 
 
     def read_spec(self, file_name, xy=None, file_dir='./extractions/', extract='Flux_st', trim=True,
-                  keep_next=False, z=0., is_SED=False, read_columns=None, flux_unc=None,
-                  wave_min=None, wave_max=None, rwave_min=None, rwave_max=None):
+                  keep_next=False, z=0., is_SED=False, read_columns=None, flux_scale=1., flux_unc=None,
+                  wave_min=None, wave_max=None, rwave_min=None, rwave_max=None, ignore_DQ=False):
         """
         file_name: [string] Name of the file to be read. It can be a plain text file (.txt, .dat) with wavelength, flux and
                    flux uncertainty columns, a .csv file from CRETA, or a .fits cube from CRETA
@@ -494,7 +531,7 @@ class specmod:
         rwave_min: [float] Minimum rest-frame wavelength to be kept in the spectrum
         rwave_max: [float] Maximum rest-frame wavelength to be kept in the spectrum
         """
-        
+
         if file_dir == 'input/data/': 
             file_dir = self.cafe_dir + file_dir
 
@@ -532,7 +569,7 @@ class specmod:
                                 tab = Table.read(file_dir+file_name, format='ascii.basic', names=['wave', 'flux', 'flux_unc'], data_start=0, comment='#')
                             else:
                                 tab = Table.read(file_dir+file_name, format='ascii.basic', names=['name', 'wave', 'flux', 'flux_unc', 'width'], data_start=0, comment='#')
-
+                            
                         # If the file is the .csv output from CRETA
                         if extension == '.csv':
                             df = pd.read_csv(file_dir+file_name, skiprows=31)
@@ -592,7 +629,7 @@ class specmod:
         
         # Remove the overlapping wavelengths between the spectral modules
         val_inds = trim_overlapping(cube.bandnames, keep_next) if trim == True else np.full(len(cube.waves), True)
-
+        
         if (wave_min is not None and rwave_min is not None) or (wave_max is not None and rwave_max is not None):
             raise ValueError('Observed and rest-frame wavelength limits cannot be set simultaneously')
         minWave = wave_min if wave_min is not None else np.nanmin(cube.waves[val_inds])
@@ -623,9 +660,9 @@ class specmod:
 
         self.z = z
         self.waves = waves / (1+z)
-        self.fluxes = fluxes / (1+z)
-        self.flux_uncs = flux_uncs / (1+z)   
-        self.masks = masks
+        self.fluxes = fluxes / (1+z) * flux_scale
+        self.flux_uncs = flux_uncs / (1+z) * flux_scale
+        self.masks = np.full(len(spec.flux), 0) if ignore_DQ == True else masks
         self.bandnames = bandnames
         self.header = header
         self.nx, self.ny, self.nz = cube.nx, cube.ny, cube.nz
@@ -651,14 +688,14 @@ class specmod:
         self.pwidths = tab[:,4].astype(float) / (1+self.z)
 
 
-
     def fit_spec(self, 
                  inparfile,
                  optfile,
                  output_path=None,
                  init_parcube=False,
                  cont_profs=None,
-                 force_all_lines=False):
+                 force_all_lines=False,
+                 norm_factor=1.):
         """
         Output result from lmfit
         """
@@ -671,21 +708,27 @@ class specmod:
 
         # Get the spectrum details from self.
         wave, flux, flux_unc, bandname, mask = mask_spec(self)
-        weight = 1./flux_unc**2
-        # Assemble it in a Spectrum1D for the profile generator and in a dictionary for the fitting and plotting
-        spec = Spectrum1D(spectral_axis=wave*u.micron, flux=flux*u.Jy, uncertainty=StdDevUncertainty(flux_unc), redshift=self.z)
-        spec_dict = {'wave':wave, 'flux':flux, 'flux_unc':flux_unc, 'weight':weight}
+
+        print(f"Normalizing spectrum by: {norm_factor:.4e}")        
+        # Scale Data
+        flux_norm = flux / norm_factor
+        flux_unc_norm = flux_unc / norm_factor
+        weight = 1./flux_unc_norm**2
+        
+        # Assemble Normalized Spectrum1D for the profile generator and in a dictionary for the fitting and plotting
+        spec = Spectrum1D(spectral_axis=wave*u.micron, flux=flux_norm*u.Jy, uncertainty=StdDevUncertainty(flux_unc_norm), redshift=self.z)
+        spec_dict = {'wave':wave, 'flux':flux_norm, 'flux_unc':flux_unc_norm, 'weight':weight}
         self.spec_dict = spec_dict
         
         # See if the user wants to fit photometric data and check whether they have been read
         self.fitphot = self.inopts['MODEL OPTIONS']['FITPHOT']
         if self.fitphot is True:
             if hasattr(self, 'pwaves') is False: raise AttributeError('You are trying to fit photometry but the data have not been loaded. Use cafe.read_phot() to do so.')
-            phot_dict = {'wave':self.pwaves, 'flux':self.pfluxes, 'flux_unc':self.pflux_uncs, 'width':self.pwidths}
+            phot_dict = {'wave':self.pwaves, 'flux':self.pfluxes/norm_factor, 'flux_unc':self.pflux_uncs/norm_factor, 'width':self.pwidths}
         else:
             phot_dict = None
         self.phot_dict = phot_dict
-            
+        
         # Initiate CAFE param generator
         param_gen = CAFE_param_generator(spec, inparfile, optfile, cafe_path=self.cafe_dir)
         _, outPath = cafeio.init_paths(self.inopts, cafe_path=self.cafe_dir, file_name=self.result_file_name, output_path=output_path)
@@ -702,6 +745,8 @@ class specmod:
             print('The parameters in the parcube provided for initialization will be used to initialize the parameter object')
             cube_params = parcube2parobj(init_parcube, init_parobj=init_params)
             params = param_gen.make_parobj(parobj_update=cube_params, get_all=True, init_parobj=init_params)
+            # Scale init_parcube parameters
+            params = scale_flux_params(params, 1.0/norm_factor)
         else:
             params = init_params
 
@@ -721,14 +766,22 @@ class specmod:
         result = cafe_grinder(self, params, spec_dict, phot_dict)
         print('The VGRAD of the spectrum is:', result.params['VGRAD'].value, '[km/s]')
 
-        self.params = result.params
+        # Unscale and assign fitted parameters
+        self.params = scale_flux_params(result.params, norm_factor)
         
         # Inject the result into the parameter cube
         parcube = parobj2parcube(result.params, parcube)
         self.parcube = parcube
 
+        # Rescale spec_dict to original for saving/plotting
+        self.spec_dict['flux'] *= norm_factor
+        self.spec_dict['flux_unc'] *= norm_factor
+        if self.phot_dict:
+             self.phot_dict['flux'] *= norm_factor
+             self.phot_dict['flux_unc'] *= norm_factor
+
         # Get compdict
-        CompFluxes, CompFluxes_0, extComps, e0, tau0, vgrad = get_model_fluxes(self.params, self.spec_dict['wave'], self.cont_profs, comps=True)
+        CompFluxes, CompFluxes_0, extComps, e0, tau0, vgrad = get_model_fluxes(self.params, self.spec_dict['wave'], self.cont_profs, comps=True, phot_dict=phot_dict)
 
         compdict = {'CompFluxes': CompFluxes,
                     'CompFluxes_0': CompFluxes_0,
@@ -756,7 +809,8 @@ class specmod:
         
         ## Save fCON cube to disk
         cube_gen = CAFE_cube_generator(self)
-        self.contcube = cube_gen.make_profcube(self.inparfile, self.optfile, prof_names={'fCon':['Comp', 'fCON'], 'fDSK':['Comp', 'fDSK'], 'fHOT':['Comp', 'fHOT']})
+        self.contcube = cube_gen.make_profcube(self.inparfile, self.optfile, prof_names={'fCON':['Comp', 'fCON'], 'fDSK':['Comp', 'fDSK'], 'fHOT':['Comp', 'fHOT'], 'fWRM':['Comp', 'fWRM'], 'fCOO':['Comp', 'fCOO'],
+                                                                                         'fCON0':['Comp_0', 'fCON0'], 'fDSK0':['Comp_0', 'fDSK0'], 'fHOT':['Comp_0', 'fHOT0'], 'fWRM':['Comp_0', 'fWRM0'], 'fCOO':['Comp_0', 'fCOO0']})
         self.contcube_name = self.result_file_name+'_contcube'
         print('Saving total continuum profile in cube to disk:',self.product_dir+self.contcube_name+'.fits')
         self.contcube.writeto(self.product_dir+self.contcube_name+'.fits', overwrite=True)
@@ -776,7 +830,7 @@ class specmod:
         cafeio.save_asdf(self, file_name=self.product_dir+self.result_file_name+'_cafefit')
 
         print('Saving figure in png to disk:',self.product_dir+self.result_file_name+'_fitfigure.png')
-        CompFluxes, CompFluxes_0, extComps, e0, tau0, vgrad = get_model_fluxes(self.params, self.spec_dict['wave'], self.cont_profs, comps=True)
+        CompFluxes, CompFluxes_0, extComps, e0, tau0, vgrad = get_model_fluxes(self.params, self.spec_dict['wave'], self.cont_profs, comps=True, phot_dict=self.phot_dict)
         gauss, drude, gauss_opc = get_feat_pars(self.params, apply_vgrad2waves=True)  # params consisting all the fitted parameters        
         # Save figure
         cafefig = cafeplot(self.spec_dict, self.phot_dict, CompFluxes, gauss, drude, vgrad=vgrad, pahext=extComps['extPAH'], save_name=self.product_dir+self.result_file_name+'_fitfigure.png', params=self.params)
@@ -832,7 +886,7 @@ class specmod:
         cont_profs = prof_gen.make_cont_profs() # load the selected unscaled continuum profiles
 
         # Scale continuum profiles with parameters and get spectra
-        CompFluxes, CompFluxes_0, extComps, e0, tau0, _ = get_model_fluxes(params, wave, cont_profs, comps=True)
+        CompFluxes, CompFluxes_0, extComps, e0, tau0, _ = get_model_fluxes(params, wave, cont_profs, comps=True, phot_dict=phot_dict)
 
         # Get feature spectrum out of the feature parameters
         gauss, drude, gauss_opc = get_feat_pars(params, apply_vgrad2waves=True)
@@ -871,7 +925,7 @@ class specmod:
         prof_gen = CAFE_prof_generator(spec, inparfile, optfile, phot_dict, cafe_path=self.cafe_dir)
         cont_profs = prof_gen.make_cont_profs()
         
-        CompFluxes, CompFluxes_0, extComps, e0, tau0, vgrad = get_model_fluxes(params, wave, cont_profs, comps=True)
+        CompFluxes, CompFluxes_0, extComps, e0, tau0, vgrad = get_model_fluxes(params, wave, cont_profs, comps=True, phot_dict=phot_dict)
         
         gauss, drude, gauss_opc = get_feat_pars(params, apply_vgrad2waves=True)  # params consisting all the fitted parameters
         
@@ -911,51 +965,6 @@ class specmod:
 
         return ax
 
-
-    # TO BE DEPRECATED AS ALL READ AND WRITE FUNCTIONS SHOULD BE IN CAFE IO
-    def save_result(self, asdf=True, pah_tbl=True, line_tbl=True, file_name=None):
-
-        if hasattr(self, 'parcube') is False:
-            raise AttributeError('The spectrum is not fitted yet. Missing fitted result - parcube.')
-
-        params = self.parcube.params
-        wave = self.spec.spectral_axis.value
-
-        if asdf is True:
-            params_dict = params.valuesdict()
-            
-            # Get fitted results
-            gauss, drude, gauss_opc = get_feat_pars(params, apply_vgrad2waves=True)  # params consisting all the fitted parameters
-            CompFluxes, CompFluxes_0, extComps, e0, tau0, _ = get_model_fluxes(params, wave, self.cont_profs, comps=True)
-
-            # Get PAH powers (intrinsic/extinguished)
-            pah_power_int = drude_int_fluxes(CompFluxes['wave'], drude)
-            pah_power_ext = drude_int_fluxes(CompFluxes['wave'], drude, ext=extComps['extPAH'])
-
-            # Quick hack for output PAH and line results
-            output_gauss = {'wave':gauss[0], 'width':gauss[1], 'peak':gauss[2], 'name':gauss[3], 'strength':np.zeros(len(gauss[3]))} #  Should add integrated gauss
-            output_drude = {'wave':drude[0], 'width':drude[1], 'peak':drude[2], 'name':drude[3], 'strength':pah_power_int.value}
-
-            # Make dict to save in .asdf
-            obsspec = {'wave': self.wave, 'flux': self.flux, 'flux_unc': self.flux_unc}
-            cafefit = {'cafefit': {'obsspec': obsspec,
-                                   'fitPars': params_dict,
-                                   'CompFluxes': CompFluxes,
-                                   'CompFluxes_0': CompFluxes_0,
-                                   'extComps': extComps,
-                                   'e0': e0,
-                                   'tau0': tau0,
-                                   'gauss': output_gauss,
-                                   'drude': output_drude
-                                   }
-                       }
-
-            # Save output result to .asdf file
-            target = AsdfFile(cafefit)
-            if file_name is None:
-                target.write_to(self.cafe_dir+'cafe_results/last_unnamed_cafefit.asdf', overwrite=True)
-            else:
-                target.write_to(file_name+'.asdf', overwrite=True)
 
 
 def plot_cafefit(asdf_fn):

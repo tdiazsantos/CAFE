@@ -343,7 +343,7 @@ class cube_preproc:
                 aper = RectangularAperture([x,y], r[i]*2., r[i]*2.)
             apers.append(aper)
 
-        phot_table = aperture_photometry(data, apers, wcs=w, error=error)
+        phot_table = aperture_photometry(data, apers, wcs=w.celestial, error=error)
         rs_photometry = []
         rs_error = []
         rs_area = []
@@ -980,9 +980,12 @@ class cube_preproc:
     #    return allRatio        
 
                 
-    def calculateStitchRatios(self, realData, aperture_correction, idx, grid):
+    def calculateStitchRatios(self, realData, aperture_correction, idx, grid, stitch_to_shortest=False):
 
         allRatio = []
+        if stitch_to_shortest:
+            allRatio.append(1.0) # Reference is the first band
+        
         for i in range(len(realData)-1):
             
             chA = realData[i]
@@ -1017,7 +1020,6 @@ class cube_preproc:
             
             else:
                 chA_overlapping_data = chA_data[chA_start[0]:]
-                chA_over_ls= chA_ls[chA_start[0]:]
                 chB_overlapping_data = chB_data[:chB_stop[-1]+1]
                 
                 chA_median = np.nanmedian(chA_overlapping_data)
@@ -1026,14 +1028,18 @@ class cube_preproc:
                 if np.isnan(chA_median) or np.isnan(chB_median):
                     ratio = 1.
                 else:
-                    ratio = chB_median / chA_median 
+                    if stitch_to_shortest:
+                        ratio = chA_median / chB_median
+                    else:
+                        ratio = chB_median / chA_median 
                     #chA_mean = np.mean(chA_overlapping_data)
                     #chB_mean = np.mean(chB_overlapping_data)
                     #ratio = chB_mean / chA_mean 
             
             allRatio.append(ratio)
 
-        allRatio.append(1.)
+        if not stitch_to_shortest:
+            allRatio.append(1.) # Reference is the last band (default)
 
         return allRatio
 
@@ -1047,11 +1053,13 @@ class cube_preproc:
     ########### --> Return [df_res,realData_all,spec1ds]   ############################
     # @stitched_spectrum: The spectrum 1D element. (Spectrum1D)           
     ###############################################################################    
-    def stitchSpectrum(self, ratio_list, idx, spectrum):
+    def stitchSpectrum(self, ratio_list, idx, spectrum, stitch_to_shortest=False):
 
-        firstone = np.where(np.array(ratio_list[idx:]) == 1.)[0][0]
-
-        ratio = np.prod(ratio_list[idx:firstone+idx+1])
+        if stitch_to_shortest:
+            ratio = np.prod(ratio_list[:idx+1])
+        else:
+            firstone = np.where(np.array(ratio_list[idx:]) == 1.)[0][0]
+            ratio = np.prod(ratio_list[idx:idx+firstone+1])
 
         return np.array(spectrum) * ratio
 

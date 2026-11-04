@@ -69,7 +69,7 @@ class creta:
                          aperture_type=0, convolve=False, user_ra=0., user_dec=0.,
                          user_r_ap=None, point_source=False, lambda_ap=None, aperture_correction=False, centering=False,
                          lambda_cent=None, perband_cent=False, background=False, r_ann_in=None, ann_width=None, parameter_file=True,
-                         ignore_DQ=False):
+                         ignore_DQ=False, stitch_to_shortest=False):
         
 
         import time
@@ -353,10 +353,24 @@ class creta:
         all_s_ratios = []
         # For every aperture, calculate the stitching ratio
         for aperi in range(len(realData_all[0].rs[0])):
-            s_ratios = realData_all[0].preprocess.calculateStitchRatios(realData_all, aperture_correction, aperi, False)
+            s_ratios = realData_all[0].preprocess.calculateStitchRatios(realData_all, aperture_correction, aperi, False, stitch_to_shortest=stitch_to_shortest)
             all_s_ratios.append(s_ratios)
-        print('Stitch ratios:', all_s_ratios)
+            print(f'Aperture {aperi} Individual (band-to-band) stitch ratios: {all_s_ratios}')
 
+        # Calculate and print cumulative factors for the console
+        for aperi, aper_ratios in enumerate(all_s_ratios):
+            cum_factors = []
+            for i in range(len(aper_ratios)):
+                if stitch_to_shortest:
+                    cum_prod = np.prod(aper_ratios[:i+1])
+                else:
+                    # Find the reference 1.0 (the longest wavelength band)
+                    firstone = np.where(np.array(aper_ratios[i:]) == 1.)[0][0]
+                    # Multiply all ratios from current to reference
+                    cum_prod = np.prod(aper_ratios[i:i+firstone+1])
+                cum_factors.append(cum_prod)
+            print(f'Aperture {aperi} Cumulative scaling factors: {cum_factors}')
+        
         dfs_alls = []
         meta_alls = []
         filenames_alls = []
@@ -385,9 +399,9 @@ class creta:
                     beforeStitch = np.array(data.corrected_spectrum)[:,j]                     
                     beforeStitch_error = np.array(data.error)[:,j]
                     
-                stitched_flux = preprocess.stitchSpectrum(list(np.array(all_s_ratios)[j,:]), i, beforeStitch) #stitch aperture
+                stitched_flux = preprocess.stitchSpectrum(list(np.array(all_s_ratios)[j,:]), i, beforeStitch, stitch_to_shortest=stitch_to_shortest) #stitch aperture
                 data.stitched_spectrum.append(stitched_flux) #stitched spectrum
-                stitched_error= preprocess.stitchSpectrum(list(np.array(all_s_ratios)[j,:]), i, beforeStitch_error) #stitch aperture
+                stitched_error= preprocess.stitchSpectrum(list(np.array(all_s_ratios)[j,:]), i, beforeStitch_error, stitch_to_shortest=stitch_to_shortest) #stitch aperture
                 data.stitched_error.append(stitched_error) #stitched spectrum                                    
                 
                 #else: #if next cube does not exists

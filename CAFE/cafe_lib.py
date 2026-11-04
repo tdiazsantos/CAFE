@@ -7,7 +7,7 @@ shouldn't need to be changed to alter how CAFE is doing its fitting
 import numpy as np 
 import matplotlib.pyplot as plt 
 from scipy.interpolate import interp1d, splrep, splev, RegularGridInterpolator
-from scipy.integrate import simps
+from scipy.integrate import simpson as simps
 from astropy.stats import mad_std
 from matplotlib.ticker import ScalarFormatter
 
@@ -16,7 +16,7 @@ from CAFE.dustgrainfunc import grain_totemissivity
 from CAFE.component_model import pah_drude, gauss_prof, drude_prof, drude_int_fluxes
 
 
-#import ipdb
+import ipdb
 
 #################################
 ### Miscellaneous             ###
@@ -128,16 +128,16 @@ def calc_weights(wave, pwave, nBins):
     nPerBin = []
     eps = 1e-5 # Not sure why this is here but it's in the IDL version
     for i in range(nBins):
-        nSpec = np.where(((wave >  (1-eps)*wMinBin[i]) & (wave < wMaxBin[i]*(1+eps))))[0].size
-        nPhot = np.where(((pwave >  (1-eps)*wMinBin[i]) & (pwave < wMaxBin[i]*(1+eps))))[0].size
+        nSpec = np.where(((wave > (1-eps)*wMinBin[i]) & (wave < wMaxBin[i]*(1+eps))))[0].size
+        nPhot = np.where(((pwave > (1-eps)*wMinBin[i]) & (pwave < wMaxBin[i]*(1+eps))))[0].size
         nPerBin.append(nSpec+nPhot)
     
     # Create weight arrays for each pixel in spec and phot
     sweights = np.zeros(wave.size)
     pweights = np.zeros(pwave.size)
     for i in range(nBins):
-        idxSpec = ((wave >  (1-eps)*wMinBin[i]) & (wave < wMaxBin[i]*(1+eps)))
-        idxPhot = ((pwave >  (1-eps)*wMinBin[i]) & (pwave < wMaxBin[i]*(1+eps)))
+        idxSpec = ((wave > (1-eps)*wMinBin[i]) & (wave < wMaxBin[i]*(1+eps)))
+        idxPhot = ((pwave > (1-eps)*wMinBin[i]) & (pwave < wMaxBin[i]*(1+eps)))
         # If there are points in the bin, assign weight based on number of points
         if nPerBin[i] > 0:
             sweights[idxSpec] += weightPerBin[i]/nPerBin[i]
@@ -230,7 +230,7 @@ def synphot(wave, flux, z=0., filters=None, dofilter=False, filterPath='tables/f
         else:
             # Convert flux density to wavelength units
             flux*=2.998e14/wave**2
-            # TDS I think the integration was wrong (the 1+z's and logs). That's why the photometry looked "funny"
+            # TDS I think the integration was done wrong (the 1+z's and logs). That's why the photometry looked "funny"
             # Now everything is done in rest-frame since the filters/photometry (and the photo-spec itself) is already in rest-frame
             log_fwaves = np.log(fwaves[i])
             flux_fwaves = np.interp(log_fwaves, log_wave, flux)
@@ -300,6 +300,36 @@ def intTab(f, h):
 
 
 ##############################
+### Re-weight photometry   ###
+##############################
+def calc_phot_weights(spec, phot):
+
+    wave = np.concatenate((spec['wave'], phot['wave']))
+    wave_types = np.concatenate((np.zeros(spec['wave'].size), np.ones(phot['wave'].size)))
+    Dspecwave = spec['wave'][spec['wave'].size-1] - spec['wave'][0]
+    avsnr_spec = np.nanmedian(spec['flux']/spec['flux_unc'])
+    avsnr_phot = np.nanmedian(phot['flux']/phot['flux_unc'])
+    # Photometric points are marked as 1 for re-scaling
+    sortinds = np.argsort(wave)
+    wave = wave[sortinds]
+    wave_types = wave_types[sortinds]
+    phot_weights = np.ones(wave.size)
+    # phot_weights = R_0 / R = R_0 * (dl/l); R_0 ~ 3000 or in general = ave(l)/dl = ave(l) / (Dl/N) = ave(l) * (N/Dl) = sum(l)/Dl
+    # where Dl = wave_max - wave_min, and N should be the number of wavelength *independent* elements, so since the array (the emission lines)
+    # are almost roughly Nyquist samples then N is in reality N/2, where now N is the number of wavelength elements
+    R_0 = np.average(spec['wave']) * (spec['wave'].size/2) / Dspecwave
+    for i in range(wave.size):
+        if wave_types[i] == 1.:
+            if i == 0: phot_weights[0] = R_0 * (wave[1]-wave[0])/wave[0]
+            elif i == wave.size-1: phot_weights[wave.size-1] = R_0 * (wave[wave.size-1]-wave[wave.size-2])/wave[wave.size-1]
+            else: phot_weights[i] = R_0 * 0.5*(wave[i+1]-wave[i-1])/wave[i]
+
+    phot_weights[sortinds] = phot_weights
+
+    return phot_weights[spec['wave'].size:] * (avsnr_spec / avsnr_phot)**2
+
+
+##############################
 ### Goodness of Fit        ###
 ##############################
 def chisquare(params, spec, phot, cont_profs, show=True):
@@ -341,7 +371,7 @@ def chisquare(params, spec, phot, cont_profs, show=True):
         weights = 1./spec['flux_unc']**2
         return (spec['flux']-model)*np.sqrt(weights)
     else:
-        weights = np.concatenate((1./spec['flux_unc']**2, 1./phot['flux_unc']**2))
+        weights = np.concatenate((1./spec['flux_unc']**2, 1./phot['flux_unc']**2)) * np.concatenate((np.ones(spec['flux'].size), phot['weight']))
         flux = np.concatenate((spec['flux'], phot['flux']))
         return (flux-model)*np.sqrt(weights)
 
@@ -886,6 +916,7 @@ def get_model_fluxes(params, wave, cont_profs, comps=False, phot_dict=None):
     if comps is True:
         
         # Model components with extinction applied
+        #fluxMod = fCIR + fCLD + fCOO + fWRM + fHOT + fLIN + fPAH + fSTR + fSTB + fDSK
         fCON = fCIR + fCLD + fCOO + fWRM + fHOT + fSTR + fSTB + fDSK
         fDST = fCIR + fCLD + fCOO + fWRM + fHOT
         fSRC = fSTR + fSTB + fDSK
@@ -898,13 +929,15 @@ def get_model_fluxes(params, wave, cont_profs, comps=False, phot_dict=None):
                  'STB_100':fSTB_100, 'STB_010':fSTB_010, 'STB_002':fSTB_002}
 
         # Intrinsic model components (no extinction applied)
-        fluxMod0 = fCIR_0 + fCLD_0 + fCOO_0 + fWRM_0 + fHOT_0 + fLIN_0 + fPAH_0 + fSTR_0 + fSTB_0 + fDSK_0
+        #fluxMod_0 = fCIR_0 + fCLD_0 + fCOO_0 + fWRM_0 + fHOT_0 + fLIN_0 + fPAH_0 + fSTR_0 + fSTB_0 + fDSK_0
         fCON_0 = fCIR_0 + fCLD_0 + fCOO_0 + fWRM_0 + fHOT_0 + fSTR_0 + fSTB_0 + fDSK_0
         fDST_0 = fCIR_0 + fCLD_0 + fCOO_0 + fWRM_0 + fHOT_0
         fSRC_0 = fSTR_0 + fSTB_0 + fDSK_0
+        fFTS_0 = fPAH_0 + fLIN_0
+
         CompFluxes_0 = {'wave':waveMod, 'fCIR0':fCIR_0, 'fCLD0':fCLD_0, 'fCOO0':fCOO_0, 'fWRM0':fWRM_0, 'fHOT0':fHOT_0, 
                         'fLIN0':fLIN_0, 'fPAH0':fPAH_0, 'fSTR0':fSTR_0, 'fSTB0':fSTB_0, 'fDSK0':fDSK_0,
-                        'fCON0':fCON_0, 'fDST0':fDST_0, 'fSRC0':fSRC_0,
+                        'fCON0':fCON_0, 'fDST0':fDST_0, 'fSRC0':fSRC_0, 'fFTS0': fFTS_0,
                         'STB0_100':fSTB_0_100, 'STB0_010':fSTB_0_010, 'STB0_002':fSTB_0_002}
 
         # Extinctions
@@ -918,7 +951,7 @@ def get_model_fluxes(params, wave, cont_profs, comps=False, phot_dict=None):
 
         # VGRAD
         vgrad = {'VGRAD':p['VGRAD']}
-
+        
         return CompFluxes, CompFluxes_0, extComps, emiss, tau0, vgrad
 
     else:
@@ -1130,7 +1163,7 @@ def cafeplot(spec, phot, comps, gauss, drude, vgrad={'VGRAD':0.}, plot_drude=Tru
     else:
         wave = spec['wave']
         flux = spec['flux']
-                               
+    
     ax1.plot(wavemod, fCont, color='gray', label='Continuum Fit', linestyle='-', zorder=4, alpha=0.8)
     ax1.plot(wavemod, fCont+fLin+fPAH, color='#4c956c', label='Total Fit', linewidth=1.5, zorder=5, alpha=0.85) # green
 
@@ -1193,8 +1226,8 @@ def cafeplot(spec, phot, comps, gauss, drude, vgrad={'VGRAD':0.}, plot_drude=Tru
     ax11.tick_params(axis='y', labelsize=10)
     #ax11.tick_params(direction='in', which='both', length=4, width=0.8, right=True)
 
-    min_flux = np.nanmin(spec['flux'][np.r_[0:5,-5:len(spec['flux'])]])
-    max_flux = np.nanmax(spec['flux'][np.r_[0:5,-5:len(spec['flux'])]])
+    min_flux = np.nanmin(flux[np.r_[0:5,-5:len(flux)]])
+    max_flux = np.nanmax(flux[np.r_[0:5,-5:len(flux)]])
 
     ax1.legend(loc='lower right')
     ax1.tick_params(direction='in', which='both', length=6, width=1, top=True)

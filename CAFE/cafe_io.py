@@ -78,7 +78,7 @@ class cafe_io:
         if self.fluxes.ndim != 1:
             self.nz, self.ny, self.nx = self.fluxes.shape
         else:
-            self.nz, self.ny, self.nx = self.fluxes.shape, 1, 1
+            self.nz, self.ny, self.nx = self.fluxes.shape[0], 1, 1
 
         cube.close()
 
@@ -154,9 +154,7 @@ class cafe_io:
         if instnames[0] != 'PHOTOMETRY':
             # Load all files in the resolving power folder
             files = os.listdir(tablePath+'resolving_power/')
-            for i in files: #exclude hidden files from mac
-                if i.startswith('.'):
-                    files.remove(i)
+            files = [i for i in files if not i.startswith('.')] #exclude hidden files from mac
         
             # Get the names of the files for each instrument/module
             inst_files = []
@@ -816,7 +814,9 @@ class cafe_io:
         else:
             from CAFE.cafe_helper import parcube2parobj
             fitPars = parcube2parobj(cafe.parcube, **kwargs)
-            
+            fitParVals = {p: fitPars[p].value for p in fitPars}
+            fitParErrs = {p: fitPars[p].stderr for p in fitPars}
+
         from CAFE.cafe_lib import mask_spec, get_model_fluxes, get_feat_pars
 
         wave, flux, flux_unc, bandname, mask = mask_spec(cafe)
@@ -841,13 +841,14 @@ class cafe_io:
         pah_power_ext = drude_int_fluxes(CompFluxes['wave'], drude, ext=extComps['extPAH'])
         
         # Quick hack for output PAH and line results
-        output_gauss = {'wave':gauss[0], 'gamma':gauss[1], 'peak':gauss[2], 'name':gauss[3], 'strength':np.sqrt(2.*np.pi)*2.998e5*gauss[1]*gauss[2]} #  Should add integrated gauss
+        output_gauss = {'wave':gauss[0], 'gamma':gauss[1], 'peak':gauss[2], 'name':gauss[3], 'strength':np.sqrt(2.*np.pi)*gauss[0]*gauss[1]/2.355*gauss[2]} #  Should add integrated gauss
         output_drude = {'wave':drude[0], 'gamma':drude[1], 'peak':drude[2], 'name':drude[3], 'strength':pah_power_int.value}
         
         # Make dict to save in .asdf
         obsspec = {'wave': wave, 'flux': flux, 'flux_unc': flux_unc}
         cafefit = {'cafefit': {'obsspec': obsspec,
-                               'fitPars': fitPars.valuesdict(),
+                               'fitPars': fitParVals,
+                               'fitParsErr': fitParErrs,
                                'cont_profs': cafe.cont_profs,
                                'CompFluxes': CompFluxes,
                                'CompFluxes_0': CompFluxes_0,

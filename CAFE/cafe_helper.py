@@ -298,12 +298,15 @@ class CAFE_param_generator:
             # Note: Cannot deal with spectrum with gaps
             if (ref_pah_wave >= minWave) and (ref_pah_wave <= maxWave):
                 # Get index of the ref PAH
-                idx = (np.abs(wave0PAH - ref_pah_wave)).argmin() # PAH band it's closest to the input PAH wavelength
+                try:
+                    idx = (np.abs(wave0PAH - ref_pah_wave)).argmin() # PAH band it's closest to the input PAH wavelength
+                except:
+                    ipdb.set_trace()
                 if instnames[0] != 'PHOTOMETRY':
                     # Get gamma of the selected reference PAH
                     fwhm = gamPAH[idx] * wave0PAH[idx]
                     # We estimate the underlying continuum under the PAHs in terms of velocity, at +/- 10000 km/s
-                    waveMinMax = [wave0PAH[idx] * (1. - 10000./2.998e5), wave0PAH[idx] * (1. + 10000./2.998e5)]
+                    waveMinMax = [wave0PAH[idx] * (1. - gamPAH[idx]), wave0PAH[idx] * (1. + gamPAH[idx])]
                     fluxMinMax = np.interp(waveMinMax, wave, flux_left)
                     cont = 0.5 * (fluxMinMax[0] + fluxMinMax[1])
                     ref_pah_peak = np.interp(wave0PAH[idx], wave, flux_left) - cont
@@ -772,8 +775,8 @@ class CAFE_prof_generator:
         self.instnames = instnames
 
         if instnames[0] == 'PHOTOMETRY':
-            wave = np.geomspace(wave[0], wave[-1], num=int(np.ceil(np.log10(wave[-1]/wave[0])*250))) # This is equivalent to R~100
-
+            wave = np.geomspace(wave[0], wave[-1], num=int(np.ceil(np.log10(wave[-1]/wave[0])*instnames[1]*wave[0]))) # This is equivalent to R~instrument*2
+        
         # Average sampling of the spectrum
         eqRspec = wave.size/np.log10(np.nanmax(wave)/np.nanmin(wave)) # Equivalent to R
 
@@ -794,7 +797,7 @@ class CAFE_prof_generator:
             waveMod = wave
 
         if wave[-1] <= 30.:
-            undersampMIR = 4
+            undersampMIR = 4.
             minMIR = wave[-1] + (wave[-1]-wave[-2])
             maxMIR = 30.
             nMIR = int(np.ceil(np.log10(maxMIR/minMIR)*eqRspec/undersampMIR))
@@ -802,15 +805,15 @@ class CAFE_prof_generator:
             waveMod = np.concatenate((waveMod, waveMIR)) # waveUV, 
             
         if phot_dict is not None:
-            if phot_dict['wave'][0] < waveMod[0]:
+            if waveMod[0] > phot_dict['wave'][0]:
                 undersampOpt = 4.
                 minOpt = phot_dict['wave'][0] - phot_dict['width'][0]
                 maxOpt = np.nanmax((waveMod[0] - (waveMod[1]-waveMod[0]), phot_dict['wave'][0]))
                 nOpt = int(np.ceil(np.log10(maxOpt/minOpt)*eqRspec/undersampOpt))
                 waveOpt = np.geomspace(minOpt, maxOpt, num=nOpt)
-                waveMod = np.concatenate((waveMod, waveOpt))
+                waveMod = np.concatenate((waveOpt, waveMod))
 
-            if phot_dict['wave'][-1] > waveMod[-1]:
+            if waveMod[-1] < phot_dict['wave'][-1]:
                 undersampFIR = 4.
                 minFIR = np.nanmin((waveMod[-1] + (waveMod[-1]-waveMod[-2]), phot_dict['wave'][-1]))
                 maxFIR = phot_dict['wave'][-1] + phot_dict['width'][-1]
@@ -1093,6 +1096,12 @@ class CAFE_cube_generator:
         self.nz = cube.nz
         self.z = cube.z
 
+        if hasattr(cube, 'pwaves') is True:
+            self.pwaves = cube.pwaves
+            self.pfluxes = cube.pfluxes
+            self.pflux_uncs = cube.pflux_uncs
+            self.pwidths = cube.pwidths
+
         if hasattr(cube, 'parcube'): self.parcube = cube.parcube
 
         
@@ -1142,19 +1151,30 @@ class CAFE_cube_generator:
         if hasattr(self, 'parcube') is False:
             raise AttributeError('The CAFE object does not have a parameter cube (parcube) yet. The spectrum has not been fitted or a preexisting parameter cube has not been loaded. Please use cafe.read_parcube_file() to load it from disk or use cafe.fit_spec() to fit a spectrum.')
 
-        self.wave, self.flux, self.flux_unc, self.bandname, self.mask = mask_spec(self.cube)
-        self.weight = 1./self.flux_unc**2
-        self.spec = Spectrum1D(spectral_axis=self.wave*u.micron, flux=self.flux*u.Jy, uncertainty=StdDevUncertainty(self.flux_unc), redshift=self.z)
+        self.inpars = cafeio.read_inifile(inparfile)
+        self.inopts = cafeio.read_inifile(optfile)
 
-        prof_gen = CAFE_prof_generator(self.spec, inparfile, optfile, None, cafe_path=self.cafe_dir)
-        self.cont_profs = prof_gen.make_cont_profs()
-        waveMod = self.cont_profs['waveMod']
+        wave, flux, flux_unc, bandname, self.mask = mask_spec(self.cube)
+        weight = 1./flux_unc**2
+        spec = Spectrum1D(spectral_axis=wave*u.micron, flux=flux*u.Jy, uncertainty=StdDevUncertainty(flux_unc), redshift=self.z)
+        spec_dict = {'wave':wave, 'flux':flux, 'flux_unc':flux_unc, 'weight':weight}
 
+        self.fitphot = self.inopts['MODEL OPTIONS']['FITPHOT']
+        if self.fitphot is True:
+            if hasattr(self, 'pwaves') is False: raise AttributeError('You are trying to fit photometry but the data have not been loaded. Use cafe.read_phot() to do so.')
+            phot_dict = {'wave':self.pwaves, 'flux':self.pfluxes, 'flux_unc':self.pflux_uncs, 'width':self.pwidths}
+        else:
+            phot_dict = None
+
+        prof_gen = CAFE_prof_generator(spec, inparfile, optfile, phot_dict, cafe_path=self.cafe_dir)
+        cont_profs = prof_gen.make_cont_profs()
+        waveMod = cont_profs['waveMod']
+        
         ini_profcube = np.full((len(waveMod), self.ny, self.nx), np.nan)            
         primary_hdu = fits.PrimaryHDU() # What should we put in primary?
         
         profcube = fits.HDUList(primary_hdu)
-
+        
         for prof_name, prof_pars in prof_names.items():
             globals()[prof_name] = fits.ImageHDU(ini_profcube.copy(), name=prof_name, header=self.cube_header)
             profcube.append(globals()[prof_name])
@@ -1162,10 +1182,11 @@ class CAFE_cube_generator:
             for i in range(self.nx):
                 for j in range(self.ny):
                     params = parcube2parobj(self.parcube, x=i, y=j)
-                    CompFluxes, CompFluxes_0, extComps, e0, tau0, vgrad = get_model_fluxes(params, self.wave, self.cont_profs, comps=True)
+                    CompFluxes, CompFluxes_0, extComps, e0, tau0, vgrad = get_model_fluxes(params, wave, cont_profs, comps=True, phot_dict=phot_dict)
                     if prof_pars[0] == 'Comp':
                         profcube[prof_name].data[:, j, i] = CompFluxes[prof_pars[1]]
-                    
+                    elif prof_pars[0] == 'Comp_0':
+                        profcube[prof_name].data[:, j, i] = CompFluxes_0[prof_pars[1]]
                     elif prof_pars[0] == 'Feat':
                         gauss, drude, gauss_opc = get_feat_pars(params, apply_vgrad2waves=True)
                         ind = [idx for idx, s in enumerate(params.keys()) if prof_pars[1] in s]
@@ -1179,8 +1200,8 @@ class CAFE_cube_generator:
                             ValueError('The feature you are trying to get the profile from is not among the fitted parameters')
 
 
-        waves_tbl = [(i, k) for i, k in zip(np.arange(len(waveMod)), self.cont_profs['waveMod'])]
-        waves_rec = np.rec.array(waves_tbl, formats='int16, float16', names='idx, wave')
+        waves_tbl = [(i, k) for i, k in zip(np.arange(len(waveMod)), cont_profs['waveMod'])]
+        waves_rec = np.rec.array(waves_tbl, formats='int16, float32', names='idx, wave')
         
         waves = fits.BinTableHDU(waves_rec.copy(), name='WAVE')
         profcube.append(waves)
