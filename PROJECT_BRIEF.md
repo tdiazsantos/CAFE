@@ -344,6 +344,8 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - GitHub reports it mergeable and shows no CI checks.
   - I merge it myself on GitHub; never merge, approve or close anything on GOALS.
   - Next: after my merge, bring my fork's `master` up to GOALS again, asking before pushing.
+- 2026-11-06: `dev` pushed to my fork with my OK (`52ba88a`→`819b503`, 8 commits, `PROJECT_BRIEF.md` only, no trailers).
+- 2026-11-06: **Branch names** describe their content, not our milestones (e.g. `GOALS-fixes-2026-11`, not `m2-fixes-2026-11`). This applies from now on. `m2-fixes-2026-11` keeps its name, because renaming it would close PR #100.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
