@@ -9,7 +9,7 @@ Owner: Tanio Díaz-Santos. Started 2026-11-04.
 
 ## Repositories and folders
 - **GOALS upstream:** https://github.com/GOALS-survey/CAFE. `master` @ `39e298b` (2026-06-08) at the start; `7299306` since 2026-11-06 (PR #99); `3147e2a` since 2026-11-06 (PR #100); `788be50` since 2026-11-06 (PR #101). Remote name `upstream`.
-- **My fork:** https://github.com/tdiazsantos/CAFE. `master` @ `377cfef` (2025-02-10) at the start; `7299306` since 2026-11-06, then `3147e2a` (after PR #100), equal to GOALS `master`; to be synced to `788be50` (PR #101). Remote name `origin`.
+- **My fork:** https://github.com/tdiazsantos/CAFE. `master` @ `377cfef` (2025-02-10) at the start; `7299306` since 2026-11-06, then `3147e2a` (after PR #100), then `788be50` (after PR #101), equal to GOALS `master`. Remote name `origin`.
 - **Project folder (since the freeze, 2026-11-06):** `/Users/tanio/Sync/pywork/CAFE`, a fresh clone of my fork, with remotes `origin` and `upstream` (push to `upstream` disabled). Branch `dev` (from `master` @ `7299306`, also on my fork) holds the project and environment files.
 - **Pre-sync folder (my old working copy):** `/Users/tanio/Sync/pywork/CAFE_presync_2026-11`, read only (CLAUDE.md §5). It was `/Users/tanio/Sync/pywork/CAFE` until the freeze.
   - At the start: branch `make_contparcube` @ `f50bd6e` (2024-04-05), with uncommitted edits. Both remotes are already configured.
@@ -403,6 +403,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - the stale ref `origin/GOALS-small-fixes-2026-11` was removed. No other stale refs are left.
   - The local `master` was fast-forwarded to `788be50`.
   - Next: fast-forward my fork's `master` `3147e2a`→`788be50` and push `dev`, showing me first what each push publishes. With that, M2's second round is done, and M3 waits for my approval.
+  - *(Done the same day, with my OK: my fork's `master` `3147e2a`→`788be50` (fast-forward; equal to GOALS `master`), and `dev` `f398f51`→`72c3481` (7 commits, `PROJECT_BRIEF.md` only, no trailers). M2's second round is done; M3 waits for my approval.)*
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
