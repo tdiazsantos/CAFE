@@ -9,7 +9,7 @@ Owner: Tanio Díaz-Santos. Started 2026-11-04.
 
 ## Repositories and folders
 - **GOALS upstream:** https://github.com/GOALS-survey/CAFE. `master` @ `39e298b` (2026-06-08) at the start; `7299306` since 2026-11-06 (PR #99); `3147e2a` since 2026-11-06 (PR #100). Remote name `upstream`.
-- **My fork:** https://github.com/tdiazsantos/CAFE. `master` @ `377cfef` (2025-02-10) at the start; `7299306` since 2026-11-06, equal to GOALS `master`. Remote name `origin`.
+- **My fork:** https://github.com/tdiazsantos/CAFE. `master` @ `377cfef` (2025-02-10) at the start; `7299306` since 2026-11-06, then `3147e2a` (after PR #100), equal to GOALS `master`. Remote name `origin`.
 - **Project folder (since the freeze, 2026-11-06):** `/Users/tanio/Sync/pywork/CAFE`, a fresh clone of my fork, with remotes `origin` and `upstream` (push to `upstream` disabled). Branch `dev` (from `master` @ `7299306`, also on my fork) holds the project and environment files.
 - **Pre-sync folder (my old working copy):** `/Users/tanio/Sync/pywork/CAFE_presync_2026-11`, read only (CLAUDE.md §5). It was `/Users/tanio/Sync/pywork/CAFE` until the freeze.
   - At the start: branch `make_contparcube` @ `f50bd6e` (2024-04-05), with uncommitted edits. Both remotes are already configured.
@@ -122,10 +122,10 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
    8. Ask before pushing `dev` to my fork.
    - `dev` contains the project files. Branches meant for GOALS therefore still start from `upstream/master`, never from `dev` (CLAUDE.md §2).
 
-### M2 — Bugs in the synced version (GOALS)
+### M2 — Bugs in the synced version (GOALS) *(scope done 2026-11-06: PR #100 merged, fork `master` synced; physics decisions #6, #7, #11, #13 deferred)*
 - Start only after my approval (CLAUDE.md §1).
 - **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes. *(Done 2026-11-06: `reports/M2_bug_list_2026-11-06.md` in the work folder, items #1–#18 = a1–a18. Scope decided the same day; see "Decisions".)*
-- **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes. *(Fixes done 2026-11-06 on branch `m2-fixes-2026-11`, worktree `cmp/m2-fixes` in the work folder: 6 commits `151ea38`..`40cac7c` on `7299306`, 4 files, +17/−17. Checked by reading and the import smoke test. Full diff in `reports/M2_m2-fixes-2026-11.diff`. All 10 hunks approved line by line. Pushed to my fork with my OK. PR opened with my OK: https://github.com/GOALS-survey/CAFE/pull/100. I merged it on 2026-11-06 (merge commit `3147e2a`). Next: sync my fork's `master` with GOALS, asking before pushing.)*
+- **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes. *(Fixes done 2026-11-06 on branch `m2-fixes-2026-11`, worktree `cmp/m2-fixes` in the work folder: 6 commits `151ea38`..`40cac7c` on `7299306`, 4 files, +17/−17. Checked by reading and the import smoke test. Full diff in `reports/M2_m2-fixes-2026-11.diff`. All 10 hunks approved line by line. Pushed to my fork with my OK. PR opened with my OK: https://github.com/GOALS-survey/CAFE/pull/100. I merged it on 2026-11-06 (merge commit `3147e2a`), and my fork's `master` was synced to it with my OK.)*
 - Fix only bugs in the synced version. Each fix is minimal and tested: failing case, then fix, then test; synthetic data with known truth for physics and numerics (CLAUDE.md §3, personal rules).
 - Then a PR to GOALS after my line-by-line review (CLAUDE.md §2). The PR description is a brief human summary of 2 or 3 sentences.
 - No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
@@ -216,7 +216,7 @@ env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe
 ```
 Result 2026-11-05: 18/18 import, 0 failed. The output is identical to the GOALS master run apart from the path (`logs/smoke_sync-local.txt`).
 
-**Smoke test on the M2 fix branch** (worktree `cmp/m2-fixes` in the work folder)
+**Smoke test on the M2 fix branch** (worktree `cmp/m2-fixes` in the work folder; removed 2026-11-06 after the merge)
 ```
 cd /Users/tanio/pywork/cafe_work
 env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/m2-fixes ~/miniforge3/envs/cafe-dev/bin/python scripts/smoke_import.py /Users/tanio/pywork/cafe_work/cmp/m2-fixes
@@ -358,6 +358,13 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - the local branch `m2-fixes-2026-11`, which tracks the deleted `origin/m2-fixes-2026-11`;
     - its worktree `cmp/m2-fixes` in the work folder.
     Removing them needs my OK.
+  - *(All done the same day; see the next entry.)*
+- 2026-11-06: **M2 sync and clean-up**, each step with my OK:
+  - My fork's `master` went `7299306`→`3147e2a` (fast-forward), so fork `master` = GOALS `master` = `3147e2a`. Only the merge commit was new to the fork.
+  - `dev` went `819b503`→`f398f51`: `dd55cc1` (branch naming) and `f398f51` (merge record).
+  - The worktree `cmp/m2-fixes` was removed (it was clean). The local branch `m2-fixes-2026-11` was deleted with `git branch -d` (no force); it is contained in `master`.
+  - The stale remote-tracking ref `origin/m2-fixes-2026-11` was removed with `git branch -d -r`. No other stale refs are left.
+  - M2's scope is done. M3 waits for my approval.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
