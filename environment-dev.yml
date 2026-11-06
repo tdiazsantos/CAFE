@@ -1,0 +1,16 @@
+name: cafe-dev
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12
+  - numpy
+  - scipy
+  - astropy
+  - specutils
+  - lmfit
+  - photutils
+  - matplotlib
+  - pandas
+  - asdf
+  - scikit-learn
