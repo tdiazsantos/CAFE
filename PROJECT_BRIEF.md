@@ -124,7 +124,8 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 
 ### M2 — Bugs in the synced version (GOALS)
 - Start only after my approval (CLAUDE.md §1).
-- **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes. *(Done 2026-11-06: `reports/M2_bug_list_2026-11-06.md` in the work folder. Waiting for my review; no fixes yet.)*
+- **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes. *(Done 2026-11-06: `reports/M2_bug_list_2026-11-06.md` in the work folder, items #1–#18 = a1–a18. Scope decided the same day; see "Decisions".)*
+- **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes.
 - Fix only bugs in the synced version. Each fix is minimal and tested: failing case, then fix, then test; synthetic data with known truth for physics and numerics (CLAUDE.md §3, personal rules).
 - Then a PR to GOALS after my line-by-line review (CLAUDE.md §2). The PR description is a brief human summary of 2 or 3 sentences.
 - No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
@@ -309,6 +310,18 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-06: **M2 approved.**
   - First step only: list the bugs from the M1 report and the candidate list, sorted into (a) bugs in the synced version (GOALS) and (b) bugs only in my local changes. For each (a) bug: file:line, what goes wrong, and when it happens in normal use. Then stop for my review. No fixes yet.
   - Any later PR to GOALS: the description is a brief human summary of 2 or 3 sentences, and there is no Claude co-authorship anywhere.
+- 2026-11-06: **M2 scope** (numbers as in `reports/M2_bug_list_2026-11-06.md`):
+  - Fix now, each minimal and tested, one commit each:
+    - #1 `np.NaN` in CRETA;
+    - #2 `fit_cube`'s default `pattern`, set to `'snr'`, the default `get_fit_sequence` already uses;
+    - #4 `read_spec`'s `wave_min` / `wave_max`;
+    - #9 CRETA's trailing-slash handling.
+  - Also fix:
+    - #3 a spaxel hitting `max_nfev` must not stop the cube: warn clearly, keep lmfit's result for that spaxel, and continue;
+    - #5 `plot_cafefit` reads `'gamma'`, the key `save_asdf` writes.
+  - Physics decisions for later, not in this PR: #6, #7, #11, #13.
+  - Later: #8, #10, #12, #14, #16, #17, #18. #15 (`NPROC`) goes to M4.
+  - Work on a branch from `upstream/master`, then show me the full diff for line-by-line review. Tests stay in the work folder; the PR contains only the fixes. Don't push.
 
 ### Awaiting my OK
 - How attribution is turned on once I approve M3. `.claude/settings.local.json` applies to every commit and PR made from this folder, so a commit trailer would also land on commits for GOALS branches, and PR attribution on PRs to GOALS.
