@@ -10,7 +10,8 @@ Owner: Tanio Díaz-Santos. Started 2026-11-04.
 ## Repositories and folders
 - **GOALS upstream:** https://github.com/GOALS-survey/CAFE. `master` @ `39e298b` (2026-06-08) at the start; `7299306` since 2026-11-06 (PR #99). Remote name `upstream`.
 - **My fork:** https://github.com/tdiazsantos/CAFE. `master` @ `377cfef` (2025-02-10) at the start; `7299306` since 2026-11-06, equal to GOALS `master`. Remote name `origin`.
-- **Local working copy (pre-sync):** `/Users/tanio/Sync/pywork/CAFE` until the freeze, then `/Users/tanio/Sync/pywork/CAFE_presync_2026-11` (read only).
+- **Project folder (since the freeze, 2026-11-06):** `/Users/tanio/Sync/pywork/CAFE`, a fresh clone of my fork, with remotes `origin` and `upstream`. Branch `dev` (from `master` @ `7299306`) holds the project and environment files.
+- **Pre-sync folder (my old working copy):** `/Users/tanio/Sync/pywork/CAFE_presync_2026-11`, read only (CLAUDE.md §5). It was `/Users/tanio/Sync/pywork/CAFE` until the freeze.
   - At the start: branch `make_contparcube` @ `f50bd6e` (2024-04-05), with uncommitted edits. Both remotes are already configured.
   - Since 2026-11-04 my work in progress is committed on branch `local-wip-2026-11` (`135aa70`).
 - **Tag `legacy-2026-11`** → `7299306`: the stable synced version (my fork's `master` = GOALS `master` after PR #99). It's on my fork.
@@ -66,7 +67,7 @@ Owner: Tanio Díaz-Santos. Started 2026-11-04.
 ### M0 — Setup (no code changes)
 1. Do this before anything else:
    - Create `.claude/settings.local.json` containing `{"attribution": {"commit": "", "pr": ""}}`, so no Claude attribution is added to commits or PRs (CLAUDE.md §2).
-   - Add `.claude/`, `CLAUDE.md`, `PROJECT_BRIEF.md`, `DESIGN.md` and the environment files to `.git/info/exclude` in the legacy repo.
+   - Add `.claude/`, `CLAUDE.md`, `PROJECT_BRIEF.md`, `DESIGN.md` and the environment files to `.git/info/exclude` in the pre-sync repo.
 2. Check that `~/.claude/CLAUDE.md` is loaded (see CLAUDE.md §0).
 3. GitHub, read-only checks: `gh auth status`, and `git ls-remote` on both remotes. Confirm my push rights on the fork and on GOALS **without pushing anything**.
 4. Create the work folder and both conda envs with their environment files (CLAUDE.md §6). Python for `cafe-legacy`: propose a version (my local folder was last run with 3.11).
@@ -78,8 +79,8 @@ Owner: Tanio Díaz-Santos. Started 2026-11-04.
 ### M1 — Code comparison (no code changes)
 M1 changes nothing in any code: no fixes, no porting, no edits, no tests, no fit runs (see "Decisions").
 
-1. **Snapshot** *(done 2026-11-04)*. In the legacy repo, branch `local-wip-2026-11` (commit `135aa70`, parent `f50bd6e`) holds my 25 modified tracked files exactly as they were, including the 7 tracked `.pyc` files. No untracked files; not pushed.
-2. **Comparison setup** *(done 2026-11-04)*. In the work folder: a clone of the fork at `cmp/fork-master` (fork master), with remotes `upstream` and `legacy` (push disabled for both), and worktrees `cmp/goals-master` (GOALS master) and `cmp/local-wip` (`local-wip-2026-11`). Nothing was written into the legacy repo.
+1. **Snapshot** *(done 2026-11-04)*. In the pre-sync repo, branch `local-wip-2026-11` (commit `135aa70`, parent `f50bd6e`) holds my 25 modified tracked files exactly as they were, including the 7 tracked `.pyc` files. No untracked files; not pushed.
+2. **Comparison setup** *(done 2026-11-04)*. In the work folder: a clone of the fork at `cmp/fork-master` (fork master), with remotes `upstream` and `presync` (push disabled for both), and worktrees `cmp/goals-master` (GOALS master) and `cmp/local-wip` (`local-wip-2026-11`). Nothing was written into the pre-sync repo. The `presync` remote was called `legacy` and pointed to `/Users/tanio/Sync/pywork/CAFE` until the freeze (2026-11-06).
 3. **Compare the `.py` files** of GOALS master, my fork and my local version: the diffs, read line by line. This includes the check that the `d60a4be` reformat changes no behaviour, by comparing ASTs after normalising the `trapz`/`simps` renames *(done 2026-11-04: identical)*.
 4. **Report the differences, then STOP.** For each difference: what changed, and the findings on it (severity, file:line, evidence).
 
@@ -103,7 +104,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
    mv /Users/tanio/Sync/pywork/CAFE /Users/tanio/Sync/pywork/CAFE_presync_2026-11
    git clone https://github.com/tdiazsantos/CAFE.git /Users/tanio/Sync/pywork/CAFE
    ```
-4. **New session in `/Users/tanio/Sync/pywork/CAFE`.** I start it there. It reads this brief from `/Users/tanio/Sync/pywork/CAFE_presync_2026-11/PROJECT_BRIEF.md` until the copy below exists.
+4. **New session in `/Users/tanio/Sync/pywork/CAFE`.** I start it there. It reads this brief from `/Users/tanio/Sync/pywork/CAFE_presync_2026-11/PROJECT_BRIEF.md` until the copy below exists. *(Steps 1–7 done 2026-11-06: `master` = `upstream/master` = `7299306`, tag `legacy-2026-11` (object `81315ba`) → `7299306`.)*
    1. Check that `~/.claude/CLAUDE.md` is loaded (CLAUDE.md §0).
    2. Add the GOALS remote and check the starting point: `git remote add upstream https://github.com/GOALS-survey/CAFE.git`, `git fetch upstream`.
       - `master` and `upstream/master` should both be at `7299306` (or later, if GOALS has moved).
@@ -167,7 +168,7 @@ git -C /Users/tanio/Sync/pywork/CAFE ls-remote upstream
 ~/miniforge3/bin/gh api repos/GOALS-survey/CAFE --jq .permissions
 ```
 
-**Environments** (run from the work folder)
+**Environments** (run from the work folder; the environment files are on branch `dev`)
 ```
 cd /Users/tanio/pywork/cafe_work
 ~/miniforge3/bin/mamba env create -f /Users/tanio/Sync/pywork/CAFE/environment-dev.yml -y
@@ -189,11 +190,11 @@ Check that scikit-learn works in an env (the call CRETA makes; known truth: slop
 ```
 Result 2026-11-04: slope 3 and intercept 2 to within 1e-14 in both envs (rounding error only). `pip check`: clean in `cafe-dev`; in `cafe-legacy` only the `imagecodecs` note (see "Biases").
 
-**M0 smoke-test snapshots** (read-only export from the legacy repo; M1.2 replaces them with worktrees)
+**M0 smoke-test snapshots** (read-only export from the pre-sync repo; M1.2 replaces them with worktrees)
 ```
 mkdir -p /Users/tanio/pywork/cafe_work/smoke/goals-master-39e298b /Users/tanio/pywork/cafe_work/smoke/fork-master-377cfef
-git -C /Users/tanio/Sync/pywork/CAFE archive 39e298b | tar -x -C /Users/tanio/pywork/cafe_work/smoke/goals-master-39e298b
-git -C /Users/tanio/Sync/pywork/CAFE archive 377cfef | tar -x -C /Users/tanio/pywork/cafe_work/smoke/fork-master-377cfef
+git -C /Users/tanio/Sync/pywork/CAFE_presync_2026-11 archive 39e298b | tar -x -C /Users/tanio/pywork/cafe_work/smoke/goals-master-39e298b
+git -C /Users/tanio/Sync/pywork/CAFE_presync_2026-11 archive 377cfef | tar -x -C /Users/tanio/pywork/cafe_work/smoke/fork-master-377cfef
 ```
 
 **Smoke test: import every CAFE and CRETA module** (`scripts/smoke_import.py` in the work folder; exit status = number of failed imports)
@@ -201,9 +202,9 @@ git -C /Users/tanio/Sync/pywork/CAFE archive 377cfef | tar -x -C /Users/tanio/py
 cd /Users/tanio/pywork/cafe_work
 env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/smoke/goals-master-39e298b ~/miniforge3/envs/cafe-dev/bin/python scripts/smoke_import.py /Users/tanio/pywork/cafe_work/smoke/goals-master-39e298b
 env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/smoke/fork-master-377cfef ~/miniforge3/envs/cafe-legacy/bin/python scripts/smoke_import.py /Users/tanio/pywork/cafe_work/smoke/fork-master-377cfef
-env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-legacy/bin/python scripts/smoke_import.py /Users/tanio/Sync/pywork/CAFE
+env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE_presync_2026-11 ~/miniforge3/envs/cafe-legacy/bin/python scripts/smoke_import.py /Users/tanio/Sync/pywork/CAFE_presync_2026-11
 ```
-Result 2026-11-04, re-run after adding scikit-learn: 18/18 modules import in each of the three (the CAFE and CRETA packages plus 9 and 7 modules; first reported as 19 by miscount, corrected 2026-11-05), and the script also imports and prints `sklearn` 1.9.1. The only warnings are the `'\,'` escapes (see "Biases"). Output is in `logs/smoke_{goals-master,fork-master,local}.txt` in the work folder. `PYTHONDONTWRITEBYTECODE=1` keeps `__pycache__` out of the checkouts; the repo's `git status` was identical before and after.
+Result 2026-11-04, re-run after adding scikit-learn: 18/18 modules import in each of the three (the CAFE and CRETA packages plus 9 and 7 modules; first reported as 19 by miscount, corrected 2026-11-05), and the script also imports and prints `sklearn` 1.9.1. The only warnings are the `'\,'` escapes (see "Biases"). Output is in `logs/smoke_{goals-master,fork-master,local}.txt` in the work folder. `PYTHONDONTWRITEBYTECODE=1` keeps `__pycache__` out of the checkouts; the repo's `git status` was identical before and after. Re-run 2026-11-06 on the pre-sync path: 18/18, output identical to `logs/smoke_local.txt` apart from the path, pre-sync `git status` unchanged.
 
 **Smoke test on the sync branch** (step 2, only to catch typos from the rewrite; worktree `cmp/sync-local` in the work folder)
 ```
