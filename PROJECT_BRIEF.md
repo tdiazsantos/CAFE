@@ -434,6 +434,10 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Then I asked to drop the outdated `#  Should add integrated gauss` comment from hunk 3 and keep the closing brace. The #7 commit is now `11b8c65`, and hunk 3 needs my review again.
   - Then I asked to restore the multi-line layout of the strength formula, still without the comment. The #7 commit is now `f3d81f2`; its formula lines are identical to `70002f2`. Hunk 3 needs my review again.
   - I approved the new hunk 3. **All 3 hunks of `GOALS-physics-fixes-2026-11` are approved line by line:** 3 commits `02fae32`..`f3d81f2` on GOALS `master` `788be50`. Any later change to the branch must be shown to me again.
+  - PR text, mine:
+    - Title: "Last small fixes to CAFE".
+    - Description: in `reports/PR_GOALS-physics-fixes-2026-11_body.md` in the work folder.
+  - Next: ask before pushing the branch to my fork, then ask "Open PR GOALS-physics-fixes-2026-11 → GOALS-survey/CAFE?".
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
