@@ -126,7 +126,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - Start only after my approval (CLAUDE.md §1).
 - **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes. *(Done 2026-11-06: `reports/M2_bug_list_2026-11-06.md` in the work folder, items #1–#18 = a1–a18. Scope decided the same day; see "Decisions".)*
 - **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes. *(Fixes done 2026-11-06 on branch `m2-fixes-2026-11`, worktree `cmp/m2-fixes` in the work folder: 6 commits `151ea38`..`40cac7c` on `7299306`, 4 files, +17/−17. Checked by reading and the import smoke test. Full diff in `reports/M2_m2-fixes-2026-11.diff`. All 10 hunks approved line by line. Pushed to my fork with my OK. PR opened with my OK: https://github.com/GOALS-survey/CAFE/pull/100. I merged it on 2026-11-06 (merge commit `3147e2a`), and my fork's `master` was synced to it with my OK.)*
-- **Second GOALS round (2026-11-06):** fix #8, #12, #14 and #17 on branch `GOALS-small-fixes-2026-11` from `upstream/master` (`3147e2a`), one commit per fix. Checked by reading, a static check and the import smoke test, with no data runs. Then the full diff for my line-by-line review. Not pushed.
+- **Second GOALS round (2026-11-06):** fix #8, #12, #14 and #17 on branch `GOALS-small-fixes-2026-11` from `upstream/master` (`3147e2a`), one commit per fix. Checked by reading, a static check and the import smoke test, with no data runs. Then the full diff for my line-by-line review. Not pushed. *(Fixes done 2026-11-06 in worktree `cmp/GOALS-small-fixes`: 4 commits `a2d2ba1`..`f76a4c0` on `3147e2a`, 4 files, +16/−24, 6 hunks. Static checks and the smoke test pass. Diff in `reports/GOALS-small-fixes-2026-11.diff`. Waiting for my line-by-line review; not pushed.)*
 - Fix only bugs in the synced version. Each fix is minimal and tested: failing case, then fix, then test; synthetic data with known truth for physics and numerics (CLAUDE.md §3, personal rules).
 - Then a PR to GOALS after my line-by-line review (CLAUDE.md §2). The PR description is a brief human summary of 2 or 3 sentences.
 - No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
@@ -223,6 +223,14 @@ cd /Users/tanio/pywork/cafe_work
 env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/m2-fixes ~/miniforge3/envs/cafe-dev/bin/python scripts/smoke_import.py /Users/tanio/pywork/cafe_work/cmp/m2-fixes
 ```
 Result 2026-11-06: 18/18 import, 0 failed. The output is identical to `logs/smoke_sync-local.txt` apart from the path (`logs/smoke_m2-fixes.txt`).
+
+**Static checks and smoke test on the second GOALS round** (worktree `cmp/GOALS-small-fixes` in the work folder)
+```
+cd /Users/tanio/pywork/cafe_work
+env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python tests/GOALS-small-fixes/static_checks.py cmp/GOALS-small-fixes
+env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/GOALS-small-fixes ~/miniforge3/envs/cafe-dev/bin/python scripts/smoke_import.py /Users/tanio/pywork/cafe_work/cmp/GOALS-small-fixes
+```
+`static_checks.py` scans all of CAFE and CRETA for the pattern behind each fix, and checks that `cafe_lib.py` parses to the same AST as on `upstream/master`. Result 2026-11-06, before the fixes: 1 try/except in `cafe_grinder`, 5 remove-while-iterating loops (all in `creta.py`), 1 live `ipdb`, 4 SyntaxWarnings; nothing else. After the fixes: 0 of each, and the AST is identical. Smoke test: 18/18 import, 0 failed. The output is identical to `logs/smoke_m2-fixes.txt` apart from the path, except that the four `'\,'` SyntaxWarnings are gone (`logs/smoke_GOALS-small-fixes.txt`).
 
 **NGC7469 tutorial spectrum** (link from `notebooks/CAFE_tutorial_NGC7469_1D.ipynb`; tutorial uses z = 0.0163)
 ```
