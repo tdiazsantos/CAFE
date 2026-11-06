@@ -9,7 +9,7 @@ Owner: Tanio Díaz-Santos. Started 2026-11-04.
 
 ## Repositories and folders
 - **GOALS upstream:** https://github.com/GOALS-survey/CAFE. `master` @ `39e298b` (2026-06-08) at the start; `7299306` since 2026-11-06 (PR #99); `3147e2a` since 2026-11-06 (PR #100); `788be50` since 2026-11-06 (PR #101); `ca10c84` since 2026-11-06 (PR #102). Remote name `upstream`.
-- **My fork:** https://github.com/tdiazsantos/CAFE. `master` @ `377cfef` (2025-02-10) at the start; `7299306` since 2026-11-06, then `3147e2a` (after PR #100), then `788be50` (after PR #101), equal to GOALS `master`; to be synced to `ca10c84` (PR #102). Remote name `origin`.
+- **My fork:** https://github.com/tdiazsantos/CAFE. `master` @ `377cfef` (2025-02-10) at the start; `7299306` since 2026-11-06, then `3147e2a` (after PR #100), then `788be50` (after PR #101), then `ca10c84` (after PR #102), equal to GOALS `master`. Remote name `origin`.
 - **Project folder (since the freeze, 2026-11-06):** `/Users/tanio/Sync/pywork/CAFE`, a fresh clone of my fork, with remotes `origin` and `upstream` (push to `upstream` disabled). Branch `dev` (from `master` @ `7299306`, also on my fork) holds the project and environment files.
 - **Pre-sync folder (my old working copy):** `/Users/tanio/Sync/pywork/CAFE_presync_2026-11`, read only (CLAUDE.md §5). It was `/Users/tanio/Sync/pywork/CAFE` until the freeze.
   - At the start: branch `make_contparcube` @ `f50bd6e` (2024-04-05), with uncommitted edits. Both remotes are already configured.
@@ -122,7 +122,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
    8. Ask before pushing `dev` to my fork.
    - `dev` contains the project files. Branches meant for GOALS therefore still start from `upstream/master`, never from `dev` (CLAUDE.md §2).
 
-### M2 — Bugs in the synced version (GOALS) *(first round done 2026-11-06: PR #100 merged, fork `master` synced; physics decisions #6, #7, #11, #13 deferred. Second round done 2026-11-06: PR #101 merged. Last round: PR #102 merged 2026-11-06.)*
+### M2 — Bugs in the synced version (GOALS) *(first round done 2026-11-06: PR #100 merged, fork `master` synced; physics decisions #6, #7, #11, #13 deferred. Second round done 2026-11-06: PR #101 merged. Last round: PR #102 merged 2026-11-06. **M2 done.**)*
 - Start only after my approval (CLAUDE.md §1).
 - **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes. *(Done 2026-11-06: `reports/M2_bug_list_2026-11-06.md` in the work folder, items #1–#18 = a1–a18. Scope decided the same day; see "Decisions".)*
 - **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes. *(Fixes done 2026-11-06 on branch `m2-fixes-2026-11`, worktree `cmp/m2-fixes` in the work folder: 6 commits `151ea38`..`40cac7c` on `7299306`, 4 files, +17/−17. Checked by reading and the import smoke test. Full diff in `reports/M2_m2-fixes-2026-11.diff`. All 10 hunks approved line by line. Pushed to my fork with my OK. PR opened with my OK: https://github.com/GOALS-survey/CAFE/pull/100. I merged it on 2026-11-06 (merge commit `3147e2a`), and my fork's `master` was synced to it with my OK.)*
@@ -241,7 +241,7 @@ shasum -a 256 /Users/tanio/pywork/cafe_work/data/NGC7469/NGC7469_SingleExt_r1.5a
 ```
 324,989 bytes, 9,695 rows × 3 columns (wavelength 4.957–28.603 µm observed, flux, uncertainty), sha256 `e317901ca755f853008a2abc05bdd5ce4a2d88cd4f4135da04e464783436dc16`.
 
-**Checks and smoke test on the last GOALS round** (worktree `cmp/GOALS-physics-fixes` in the work folder)
+**Checks and smoke test on the last GOALS round** (worktree `cmp/GOALS-physics-fixes` in the work folder; removed 2026-11-06 after the merge)
 ```
 cd /Users/tanio/pywork/cafe_work
 env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/GOALS-physics-fixes ~/miniforge3/envs/cafe-dev/bin/python tests/GOALS-physics-fixes/static_checks.py cmp/GOALS-physics-fixes
@@ -453,6 +453,11 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - fast-forward my fork's `master` `788be50`→`ca10c84` and push `dev`, showing me first what each push publishes;
     - remove the worktree `cmp/GOALS-physics-fixes`, the local branch `GOALS-physics-fixes-2026-11` and the stale ref `origin/GOALS-physics-fixes-2026-11`.
   - With that, M2 (all three GOALS rounds) is done, and M3 waits for my approval.
+  - *(Done the same day, with my OK:*
+    - *my fork's `master` `788be50`→`ca10c84` (fast-forward; equal to GOALS `master`);*
+    - *`dev` `72c3481`→`1252ecb` (12 commits, `PROJECT_BRIEF.md` only, no trailers);*
+    - *the clean worktree `cmp/GOALS-physics-fixes` removed, the local branch deleted with `git branch -d`, and the stale ref removed. No other stale refs are left.*
+    - ***M2 is done.** #11 waits for M3, and M3 waits for my approval.)*
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
