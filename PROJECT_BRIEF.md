@@ -10,7 +10,7 @@ Owner: Tanio Díaz-Santos. Started 2026-11-04.
 ## Repositories and folders
 - **GOALS upstream:** https://github.com/GOALS-survey/CAFE. `master` @ `39e298b` (2026-06-08) at the start; `7299306` since 2026-11-06 (PR #99). Remote name `upstream`.
 - **My fork:** https://github.com/tdiazsantos/CAFE. `master` @ `377cfef` (2025-02-10) at the start; `7299306` since 2026-11-06, equal to GOALS `master`. Remote name `origin`.
-- **Project folder (since the freeze, 2026-11-06):** `/Users/tanio/Sync/pywork/CAFE`, a fresh clone of my fork, with remotes `origin` and `upstream`. Branch `dev` (from `master` @ `7299306`) holds the project and environment files.
+- **Project folder (since the freeze, 2026-11-06):** `/Users/tanio/Sync/pywork/CAFE`, a fresh clone of my fork, with remotes `origin` and `upstream` (push to `upstream` disabled). Branch `dev` (from `master` @ `7299306`, also on my fork) holds the project and environment files.
 - **Pre-sync folder (my old working copy):** `/Users/tanio/Sync/pywork/CAFE_presync_2026-11`, read only (CLAUDE.md §5). It was `/Users/tanio/Sync/pywork/CAFE` until the freeze.
   - At the start: branch `make_contparcube` @ `f50bd6e` (2024-04-05), with uncommitted edits. Both remotes are already configured.
   - Since 2026-11-04 my work in progress is committed on branch `local-wip-2026-11` (`135aa70`).
@@ -86,7 +86,7 @@ M1 changes nothing in any code: no fixes, no porting, no edits, no tests, no fit
 
 **Exit:** wait for my decision on what happens next. *(Decided 2026-11-05; the next steps are under "Decisions".)*
 
-### Freeze (end of M1)
+### Freeze (end of M1) *(complete 2026-11-06)*
 Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 
 **Legacy** means the stable synced version, not my work in progress.
@@ -104,7 +104,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
    mv /Users/tanio/Sync/pywork/CAFE /Users/tanio/Sync/pywork/CAFE_presync_2026-11
    git clone https://github.com/tdiazsantos/CAFE.git /Users/tanio/Sync/pywork/CAFE
    ```
-4. **New session in `/Users/tanio/Sync/pywork/CAFE`.** I start it there. It reads this brief from `/Users/tanio/Sync/pywork/CAFE_presync_2026-11/PROJECT_BRIEF.md` until the copy below exists. *(Steps 1–7 done 2026-11-06: `master` = `upstream/master` = `7299306`, tag `legacy-2026-11` (object `81315ba`) → `7299306`.)*
+4. **New session in `/Users/tanio/Sync/pywork/CAFE`.** I start it there. It reads this brief from `/Users/tanio/Sync/pywork/CAFE_presync_2026-11/PROJECT_BRIEF.md` until the copy below exists. *(Done 2026-11-06: `master` = `upstream/master` = `7299306`, tag `legacy-2026-11` (object `81315ba`) → `7299306`; `dev` pushed to my fork with my OK.)*
    1. Check that `~/.claude/CLAUDE.md` is loaded (CLAUDE.md §0).
    2. Add the GOALS remote and check the starting point: `git remote add upstream https://github.com/GOALS-survey/CAFE.git`, `git fetch upstream`.
       - `master` and `upstream/master` should both be at `7299306` (or later, if GOALS has moved).
@@ -294,6 +294,10 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - §2 and §5: "legacy folder" / "legacy working copy" → "pre-sync folder".
   - §5: the old folder line now reads `CAFE_presync_2026-11`.
   - The `cafe-legacy` env and `environment-legacy.yml` keep their names; they refer to the old library versions.
+- 2026-11-06: **Freeze complete.**
+  - The new clone has branch `dev` with 3 commits on `7299306`: the project files, the environment files, and this brief updated for the new layout (tip `5812048`). Pushed to my fork with my OK. Only those 3 commits were newly published; I am their author, and there are no trailers.
+  - With my OK, push to `upstream` is disabled in the project clone, as in the work-folder clone: `git remote set-url --push upstream DISABLED-no-push-to-GOALS`. PRs from my fork are the only route to GOALS. Fetch from `upstream` still works.
+  - Next: M2, which waits for my approval.
 
 ### Awaiting my OK
 - Whether commits going to GOALS may show Claude as co-author. Attribution stays off until I decide.
@@ -303,7 +307,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
 - 2026-11-04: The cube fitting order uses a flux sum as its "SNR" (candidate issue 7), which favours bright spaxels over high-SNR ones. Not acted on.
 - 2026-11-04: `read_spec` writes `./dummy.fits` into the current directory.
-- 2026-11-04: GOALS `master` is not branch-protected (GitHub API: `protected: false`), and I have push rights there. A stray `git push upstream` would land directly. Not acted on.
+- 2026-11-04: GOALS `master` is not branch-protected (GitHub API: `protected: false`), and I have push rights there. A stray `git push upstream` would land directly. Not acted on. *(2026-11-06: push to `upstream` is now disabled in the project clone and the work-folder clone. The read-only pre-sync repo still has a live `upstream` push URL, and a push that names the GOALS URL directly would still go through.)*
 - 2026-11-04: GOALS has open PRs that may overlap the M1 sync PR: #98 (hexagon aperture for extraction, 2026-10-24), #93 (draft, YAML conversion), #56 (PAH EQW), #47 (tutorial notebook). Not acted on.
 - 2026-11-04: `cafe-legacy` runs Python 3.11.18, not the old 3.11.5 (patch release only). The old env was x86_64; this Mac is arm64. Not acted on.
 - 2026-11-04: In `cafe-legacy`, `pip check` reports that `imagecodecs` 2026.3.6 requires numpy>=2. It arrives via photutils 1.10.0 → scikit-image → tifffile, and it imports fine with numpy 1.26.2. A metadata mismatch only. Not acted on.
