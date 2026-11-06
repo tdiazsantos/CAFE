@@ -127,7 +127,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes. *(Done 2026-11-06: `reports/M2_bug_list_2026-11-06.md` in the work folder, items #1–#18 = a1–a18. Scope decided the same day; see "Decisions".)*
 - **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes. *(Fixes done 2026-11-06 on branch `m2-fixes-2026-11`, worktree `cmp/m2-fixes` in the work folder: 6 commits `151ea38`..`40cac7c` on `7299306`, 4 files, +17/−17. Checked by reading and the import smoke test. Full diff in `reports/M2_m2-fixes-2026-11.diff`. All 10 hunks approved line by line. Pushed to my fork with my OK. PR opened with my OK: https://github.com/GOALS-survey/CAFE/pull/100. I merged it on 2026-11-06 (merge commit `3147e2a`), and my fork's `master` was synced to it with my OK.)*
 - **Second GOALS round (2026-11-06):** fix #8, #12, #14 and #17 on branch `GOALS-small-fixes-2026-11` from `upstream/master` (`3147e2a`), one commit per fix. Checked by reading, a static check and the import smoke test, with no data runs. Then the full diff for my line-by-line review. Not pushed. *(Fixes done 2026-11-06 in worktree `cmp/GOALS-small-fixes`: 4 commits `a2d2ba1`..`f76a4c0` on `3147e2a`, 4 files, +16/−24, 6 hunks. Static checks and the smoke test pass. Diff in `reports/GOALS-small-fixes-2026-11.diff`. All 6 hunks approved line by line. Pushed to my fork with my OK. PR opened with my OK: https://github.com/GOALS-survey/CAFE/pull/101. I merged it on 2026-11-06 (merge commit `788be50`). The worktree, local branch and stale ref are removed.)*
-- **Last GOALS round (2026-11-06):** fix #13, #6 (temporary) and #7 on branch `GOALS-physics-fixes-2026-11` from `upstream/master` (`788be50`), one commit per fix. Checked by reading, a static check and the import smoke test, with no data runs. Then the full diff for my line-by-line review. Not pushed. #11 waits for M3, together with `norm_factor`.
+- **Last GOALS round (2026-11-06):** fix #13, #6 (temporary) and #7 on branch `GOALS-physics-fixes-2026-11` from `upstream/master` (`788be50`), one commit per fix. Checked by reading, a static check and the import smoke test, with no data runs. Then the full diff for my line-by-line review. Not pushed. #11 waits for M3, together with `norm_factor`. *(Fixes done 2026-11-06 in worktree `cmp/GOALS-physics-fixes`: 3 commits `02fae32`..`70002f2` on `788be50`, 3 files, +9/−3, 3 hunks. Checks and the smoke test pass. Diff in `reports/GOALS-physics-fixes-2026-11.diff`. Waiting for my line-by-line review; not pushed.)*
 - Fix only bugs in the synced version. Each fix is minimal and tested: failing case, then fix, then test; synthetic data with known truth for physics and numerics (CLAUDE.md §3, personal rules).
 - Then a PR to GOALS after my line-by-line review (CLAUDE.md §2). The PR description is a brief human summary of 2 or 3 sentences.
 - No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
@@ -240,6 +240,22 @@ curl -fsSL -o /Users/tanio/pywork/cafe_work/data/NGC7469/NGC7469_SingleExt_r1.5a
 shasum -a 256 /Users/tanio/pywork/cafe_work/data/NGC7469/NGC7469_SingleExt_r1.5as_MIRI.dat
 ```
 324,989 bytes, 9,695 rows × 3 columns (wavelength 4.957–28.603 µm observed, flux, uncertainty), sha256 `e317901ca755f853008a2abc05bdd5ce4a2d88cd4f4135da04e464783436dc16`.
+
+**Checks and smoke test on the last GOALS round** (worktree `cmp/GOALS-physics-fixes` in the work folder)
+```
+cd /Users/tanio/pywork/cafe_work
+env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/GOALS-physics-fixes ~/miniforge3/envs/cafe-dev/bin/python tests/GOALS-physics-fixes/static_checks.py cmp/GOALS-physics-fixes
+env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/GOALS-physics-fixes ~/miniforge3/envs/cafe-dev/bin/python scripts/smoke_import.py /Users/tanio/pywork/cafe_work/cmp/GOALS-physics-fixes
+```
+`static_checks.py` checks three things, with no data read:
+- the `x/(1.*y)` pattern of #13 anywhere in CAFE or CRETA;
+- that the fitting-sequence image of #6 is a `nansum` over all channels;
+- that the #7 line strength, evaluated on three synthetic lines, equals the `line_table` formula and the integral over frequency of CAFE's own `gauss_prof` (known truth).
+
+Result 2026-11-06:
+- Before the fixes, all four checks fail: the old strength was off by a factor of about 10¹⁸.
+- After the fixes, all pass. The new strength over the `line_table` formula is exactly 2√(2 ln 2)/2.35482 = 1 + 1.9e-8, because `save_asdf` and `gauss_prof` use the rounded 2.35482. The new strength over the `gauss_prof` integral is 0.9999 (narrow-line approximation and `gauss_prof`'s sampled profile).
+- Smoke test: 18/18 import, 0 failed. The output is identical to `logs/smoke_GOALS-small-fixes.txt` apart from the path (`logs/smoke_GOALS-physics-fixes.txt`).
 
 ## Decisions & biases
 All entries are dated. Record a decision only after I approve it. Log biases as soon as you notice them. List defaults that still need my OK under "Awaiting my OK".
