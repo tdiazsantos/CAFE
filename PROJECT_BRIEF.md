@@ -127,6 +127,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes.
 - Fix only bugs in the synced version. Each fix is minimal and tested: failing case, then fix, then test; synthetic data with known truth for physics and numerics (CLAUDE.md §3, personal rules).
 - Then a PR to GOALS after my line-by-line review (CLAUDE.md §2).
+- No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
 - After I merge, sync my fork's `master` with GOALS again, and ask before pushing.
 
 ### M3 — My local changes
@@ -134,6 +135,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
 - The changes and the findings on each are in the M1 report. The 8 items merged in GOALS PR #99 are already in.
+- Claude co-authorship may start here, only on commits that stay on my fork. Attribution in `.claude/settings.local.json` stays off until I approve M3 (CLAUDE.md §2).
 
 ### M4 — Cube-fit performance
 - **Baseline:** time `cubemod.fit_cube` on a real cube (I choose which) and on a synthetic cube with known truth. Profile where the time goes:
@@ -227,7 +229,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 ### Decisions (approved)
 - 2026-11-04: The milestones are M0 setup, M1 check + sync + freeze, M2 cube-fit performance, and the rest later. *(Superseded 2026-11-06; see below.)*
 - 2026-11-04: M1 code changes are minimal. Nothing goes to GOALS without my line-by-line approval and an explicit OK. Changes go upstream only as a PR from my fork.
-- 2026-11-04: Until M1 is complete, everything pushed to my fork or to GOALS is authored by me alone, with no Claude attribution. Co-authorship starts with M2 in the new folder. *(The co-authorship start is on hold since 2026-11-06; see "Claude attribution stays off".)*
+- 2026-11-04: Until M1 is complete, everything pushed to my fork or to GOALS is authored by me alone, with no Claude attribution. Co-authorship starts with M2 in the new folder. *(Superseded 2026-11-06; see "Claude co-authorship" below.)*
 - 2026-11-04: There are two envs: `cafe-dev` (Python 3.12, current stack) and `cafe-legacy` (numpy<2, scipy<1.14).
 - 2026-11-04: `cafe-legacy` uses Python 3.11 and the package versions of the old `/usr/local/anaconda3/envs/cafe_env` (the local version's last env). specutils 1.12.0 comes from pip, because conda-forge doesn't have it.
 - 2026-11-04: scikit-learn goes into an env only if a version needs it at import time. None does (CRETA imports it inside functions), so neither env has it. (Superseded the same day; see below.)
@@ -287,7 +289,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - M3: the bugs that exist only in my local changes, and bringing my local changes from `local-wip-2026-11` into `dev` one at a time, each tested.
   - M4: cube-fit performance.
   - When I approve M2, start by listing which bugs from the M1 report and the candidate list are in the synced version, and which exist only in my local changes.
-- 2026-11-06: **Claude attribution stays off** until I decide whether commits going to GOALS may show Claude as co-author. This overrides "co-authorship starts with M2" (the 2026-11-04 entry above and CLAUDE.md §2) until then.
+- 2026-11-06: **Claude attribution stays off** until I decide whether commits going to GOALS may show Claude as co-author. This overrides "co-authorship starts with M2" (the 2026-11-04 entry above and CLAUDE.md §2) until then. *(Decided 2026-11-06; see "Claude co-authorship" below.)*
 - 2026-11-06: Branch `local-wip-2026-11` (`135aa70`) pushed to my fork as a backup, with my OK. Only `135aa70` was newly published; I am its author, and there are no trailers.
 - 2026-11-06: **CLAUDE.md edits**, with my permission:
   - §2: the co-authorship sentence now says attribution stays off after the freeze until I decide about GOALS commits.
@@ -298,9 +300,15 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - The new clone has branch `dev` with 3 commits on `7299306`: the project files, the environment files, and this brief updated for the new layout (tip `5812048`). Pushed to my fork with my OK. Only those 3 commits were newly published; I am their author, and there are no trailers.
   - With my OK, push to `upstream` is disabled in the project clone, as in the work-folder clone: `git remote set-url --push upstream DISABLED-no-push-to-GOALS`. PRs from my fork are the only route to GOALS. Fetch from `upstream` still works.
   - Next: M2, which waits for my approval.
+- 2026-11-06: **Claude co-authorship** (replaces "Claude attribution stays off" and the co-authorship part of the 2026-11-04 entry above):
+  - No Claude co-authorship on anything that goes to GOALS, ever: commits, PR titles and PR descriptions. This includes M2.
+  - Claude co-authorship may start in M3, and only on commits that stay on my fork.
+  - If a change made with co-authorship later goes to GOALS, the commits for the GOALS PR are made fresh from `upstream/master` without any Claude trailer, and every commit is checked before pushing.
+  - Attribution stays off in `.claude/settings.local.json` until I approve M3.
+  - CLAUDE.md §2 updated to match, with my permission: the settings sentence and the pre-push check, plus a new "Claude co-authorship after M1" rule.
 
 ### Awaiting my OK
-- Whether commits going to GOALS may show Claude as co-author. Attribution stays off until I decide.
+- How attribution is turned on once I approve M3. `.claude/settings.local.json` applies to every commit and PR made from this folder, so a commit trailer would also land on commits for GOALS branches, and PR attribution on PRs to GOALS.
 - Which real cube is the M4 benchmark (cube-fit performance).
 
 ### Biases and small issues flagged

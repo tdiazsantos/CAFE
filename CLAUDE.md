@@ -20,7 +20,11 @@
   - my git identity;
   - no `Co-Authored-By` trailer, no "Generated with Claude Code" line, no session links.
 
-  `.claude/settings.local.json` turns attribution off for this folder (M0 step 1). Never change it, and never change my git config (`user.name`, `user.email`). Before every push, check that no commit in the range carries a Claude trailer and that I am the author of every commit. After the freeze, Claude attribution stays off until I decide whether commits going to GOALS may show Claude as co-author.
+  `.claude/settings.local.json` turns attribution off for this folder (M0 step 1). Keep it off until I approve M3, and never change my git config (`user.name`, `user.email`). Before every push, check that I am the author of every commit in the range and that no commit carries a Claude trailer, except where the next rule allows one.
+- **Claude co-authorship after M1** (decided 2026-11-06):
+  - Nothing that goes to GOALS ever shows Claude as co-author: no Claude trailer in commits, and no Claude attribution in PR titles or PR descriptions. This includes M2.
+  - Co-authorship may start in M3, and only on commits that stay on my fork.
+  - If a change made with co-authorship later goes to GOALS, make the commits for the GOALS PR fresh from `upstream/master`, without any Claude trailer, and check every commit for Claude trailers before pushing.
 - Stage files by explicit path only. **Never** use `git add -A`, `git add .` or `git commit -a`. The pre-sync folder holds many untracked personal and data files.
 - Commit in small steps, one logical change per commit, with plain messages that say what changed and why.
 
