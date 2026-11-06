@@ -125,7 +125,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 ### M2 — Bugs in the synced version (GOALS)
 - Start only after my approval (CLAUDE.md §1).
 - **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes. *(Done 2026-11-06: `reports/M2_bug_list_2026-11-06.md` in the work folder, items #1–#18 = a1–a18. Scope decided the same day; see "Decisions".)*
-- **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes. *(Fixes done 2026-11-06 on branch `m2-fixes-2026-11`, worktree `cmp/m2-fixes` in the work folder: 6 commits `151ea38`..`ae27e19` on `7299306`, 4 files, +18/−18. Checked by reading and the import smoke test. Full diff in `reports/M2_m2-fixes-2026-11.diff`. Waiting for my line-by-line review; not pushed.)*
+- **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes. *(Fixes done 2026-11-06 on branch `m2-fixes-2026-11`, worktree `cmp/m2-fixes` in the work folder: 6 commits `151ea38`..`c76dcb2` on `7299306`, 4 files, +16/−17. Checked by reading and the import smoke test. Full diff in `reports/M2_m2-fixes-2026-11.diff`. Hunks 1–4 and 6–10 approved; the smaller #3 hunk is waiting for my review. Not pushed.)*
 - Fix only bugs in the synced version. Each fix is minimal and tested: failing case, then fix, then test; synthetic data with known truth for physics and numerics (CLAUDE.md §3, personal rules).
 - Then a PR to GOALS after my line-by-line review (CLAUDE.md §2). The PR description is a brief human summary of 2 or 3 sentences.
 - No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
@@ -329,6 +329,10 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Physics decisions for later, not in this PR: #6, #7, #11, #13.
   - Later: #8, #10, #12, #14, #16, #17, #18. #15 (`NPROC`) goes to M4.
   - Work on a branch from `upstream/master`, then show me the full diff for line-by-line review. Tests stay in the work folder; the PR contains only the fixes. Don't push.
+- 2026-11-06: **M2 diff review.**
+  - I approved hunks 1–4 and 6–10 (#1, #2, #4, #5, #9) line by line.
+  - For #3 (hunk 5), I asked for a smaller change: delete only the `raise` line and keep `acceptFit = False`. The existing refit loop then retries and, after `MAX_LOOPS`, prints its own "fitting was unsuccessful" message and continues.
+  - The branch was rebuilt to keep one commit per fix: `8776826` is the new #3, and #4, #5 and #9 were re-applied unchanged (same patch IDs) as `e78de07`, `268e816` and `c76dcb2`. The old tip was `ae27e19`.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
