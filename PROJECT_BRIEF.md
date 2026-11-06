@@ -125,7 +125,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 ### M2 — Bugs in the synced version (GOALS)
 - Start only after my approval (CLAUDE.md §1).
 - **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes. *(Done 2026-11-06: `reports/M2_bug_list_2026-11-06.md` in the work folder, items #1–#18 = a1–a18. Scope decided the same day; see "Decisions".)*
-- **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes.
+- **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes. *(Fixes done 2026-11-06 on branch `m2-fixes-2026-11`, worktree `cmp/m2-fixes` in the work folder: 6 commits `151ea38`..`ae27e19` on `7299306`, 4 files, +18/−18. Checked by reading and the import smoke test. Full diff in `reports/M2_m2-fixes-2026-11.diff`. Waiting for my line-by-line review; not pushed.)*
 - Fix only bugs in the synced version. Each fix is minimal and tested: failing case, then fix, then test; synthetic data with known truth for physics and numerics (CLAUDE.md §3, personal rules).
 - Then a PR to GOALS after my line-by-line review (CLAUDE.md §2). The PR description is a brief human summary of 2 or 3 sentences.
 - No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
@@ -215,6 +215,13 @@ cd /Users/tanio/pywork/cafe_work
 env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/sync-local ~/miniforge3/envs/cafe-dev/bin/python scripts/smoke_import.py /Users/tanio/pywork/cafe_work/cmp/sync-local
 ```
 Result 2026-11-05: 18/18 import, 0 failed. The output is identical to the GOALS master run apart from the path (`logs/smoke_sync-local.txt`).
+
+**Smoke test on the M2 fix branch** (worktree `cmp/m2-fixes` in the work folder)
+```
+cd /Users/tanio/pywork/cafe_work
+env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/m2-fixes ~/miniforge3/envs/cafe-dev/bin/python scripts/smoke_import.py /Users/tanio/pywork/cafe_work/cmp/m2-fixes
+```
+Result 2026-11-06: 18/18 import, 0 failed. The output is identical to `logs/smoke_sync-local.txt` apart from the path (`logs/smoke_m2-fixes.txt`).
 
 **NGC7469 tutorial spectrum** (link from `notebooks/CAFE_tutorial_NGC7469_1D.ipynb`; tutorial uses z = 0.0163)
 ```
@@ -322,6 +329,11 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Physics decisions for later, not in this PR: #6, #7, #11, #13.
   - Later: #8, #10, #12, #14, #16, #17, #18. #15 (`NPROC`) goes to M4.
   - Work on a branch from `upstream/master`, then show me the full diff for line-by-line review. Tests stay in the work folder; the PR contains only the fixes. Don't push.
+- 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
+  - Before this, a few data tests had started. They stay in the work folder:
+    - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
+    - `tests/m2/run_creta_grid.py`, run once on the unfixed branch, where it failed at `creta.py:867` as expected;
+    - logs in `tests/m2/logs`, and the empty output folder `tests/m2/out/t1_grid_before`.
 
 ### Awaiting my OK
 - How attribution is turned on once I approve M3. `.claude/settings.local.json` applies to every commit and PR made from this folder, so a commit trailer would also land on commits for GOALS branches, and PR attribution on PRs to GOALS.
@@ -338,3 +350,6 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-04: Invalid escape sequence `'\,'` in strings: GOALS `cafe_lib.py:1499–1514` (SyntaxWarning on 3.12), fork `cafe_lib.py:1137–1140`. A future Python will make this an error. For a later milestone.
 - 2026-11-04: scikit-learn is used in `CRETA/cube_handler.py:323,612` (all three versions) but is missing from `setup.py`. For the packaging milestone.
 - 2026-11-04: Correction to an M0 statement. `cafe-legacy` has had scikit-learn 1.9.1 since it was created, because conda-forge's photutils 1.10.0 build requires `scikit-learn>=1.0`. So the first sklearn decision's "neither env has it" was wrong for `cafe-legacy`. The old `cafe_env` (pip-installed photutils) had no scikit-learn.
+- 2026-11-06: After a `git stash` / `git stash pop` in the worktree `cmp/m2-fixes`, its index was empty: every file was listed as deleted and untracked. No data was lost. The working tree matched the stash byte for byte, and the commits were intact. `git read-tree HEAD` rebuilt the index. The cause is unknown; the worktree's git data lives in the Syncthing-synced `.git` (see the first entry). `git stash` is no longer used here.
+- 2026-11-06: `CRETA/cube_handler.py:129` (`self.delta_factor_list * len(self.rs)`) throws its result away, the same pattern as #9. It has no effect, because `delta_factor_list` is never read. For the dead-code clean-up under "Later".
+- 2026-11-06: The CRETA `.py` files have CRLF line endings, while the CAFE files have LF. The M2 edits keep each file's endings.
