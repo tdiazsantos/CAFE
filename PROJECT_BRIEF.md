@@ -122,10 +122,11 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
    8. Ask before pushing `dev` to my fork.
    - `dev` contains the project files. Branches meant for GOALS therefore still start from `upstream/master`, never from `dev` (CLAUDE.md §2).
 
-### M2 — Bugs in the synced version (GOALS) *(scope done 2026-11-06: PR #100 merged, fork `master` synced; physics decisions #6, #7, #11, #13 deferred)*
+### M2 — Bugs in the synced version (GOALS) *(first round done 2026-11-06: PR #100 merged, fork `master` synced; physics decisions #6, #7, #11, #13 deferred. Second round in progress.)*
 - Start only after my approval (CLAUDE.md §1).
 - **First step once I approve M2:** list which bugs from the M1 report (`reports/M1_py_differences_2026-11-05.md` in the work folder) and from "Candidate issues to verify in M1" are in the synced version (`legacy-2026-11` = GOALS `master`), and which exist only in my local changes. *(Done 2026-11-06: `reports/M2_bug_list_2026-11-06.md` in the work folder, items #1–#18 = a1–a18. Scope decided the same day; see "Decisions".)*
 - **Scope (2026-11-06):** fix #1, #2, #3, #4, #5 and #9 on one branch from `upstream/master`, one commit per fix. Tests stay in the work folder; the PR contains only the fixes. *(Fixes done 2026-11-06 on branch `m2-fixes-2026-11`, worktree `cmp/m2-fixes` in the work folder: 6 commits `151ea38`..`40cac7c` on `7299306`, 4 files, +17/−17. Checked by reading and the import smoke test. Full diff in `reports/M2_m2-fixes-2026-11.diff`. All 10 hunks approved line by line. Pushed to my fork with my OK. PR opened with my OK: https://github.com/GOALS-survey/CAFE/pull/100. I merged it on 2026-11-06 (merge commit `3147e2a`), and my fork's `master` was synced to it with my OK.)*
+- **Second GOALS round (2026-11-06):** fix #8, #12, #14 and #17 on branch `GOALS-small-fixes-2026-11` from `upstream/master` (`3147e2a`), one commit per fix. Checked by reading, a static check and the import smoke test, with no data runs. Then the full diff for my line-by-line review. Not pushed.
 - Fix only bugs in the synced version. Each fix is minimal and tested: failing case, then fix, then test; synthetic data with known truth for physics and numerics (CLAUDE.md §3, personal rules).
 - Then a PR to GOALS after my line-by-line review (CLAUDE.md §2). The PR description is a brief human summary of 2 or 3 sentences.
 - No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
@@ -365,6 +366,14 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - The worktree `cmp/m2-fixes` was removed (it was clean). The local branch `m2-fixes-2026-11` was deleted with `git branch -d` (no force); it is contained in `master`.
   - The stale remote-tracking ref `origin/m2-fixes-2026-11` was removed with `git branch -d -r`. No other stale refs are left.
   - M2's scope is done. M3 waits for my approval.
+- 2026-11-06: **M2 continues with a second GOALS round** (numbers as in `reports/M2_bug_list_2026-11-06.md`):
+  - Branch from `upstream/master` (`3147e2a`), named after its content: `GOALS-small-fixes-2026-11`. One commit per fix, each minimal:
+    - #8: remove the try/except around `fitter.minimize` in `cafe_grinder`, so lmfit's own error is raised;
+    - #12: replace the remove-while-looping hidden-file loops in `creta.py` with list comprehensions, as in PR #99;
+    - #14: replace `ipdb.set_trace()` in `dustgrainfunc.py` with a clear error saying custom SED arrays are disabled and a source name must be used;
+    - #17: make the `'\,'` strings in `cafe_lib.py` raw strings, without changing the labels.
+  - These are evident fixes: check them by reading, a static check and the import smoke test, with no data runs.
+  - Then show me the full diff for line-by-line review. Don't push.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
