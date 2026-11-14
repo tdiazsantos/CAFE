@@ -11,6 +11,11 @@
 ## 2. Git and GitHub
 - Remotes: `origin` = my fork `tdiazsantos/CAFE`; `upstream` = `GOALS-survey/CAFE`.
 - Ask before every `git push`, to any remote. Also ask before creating or pushing tags, deleting branches, `rebase`/`reset` of anything already pushed, any `--force`, and renaming, moving or deleting files or folders.
+- **Review of every code change** (decided 2026-11-14). For every code change, on any branch, show me:
+  - the full diff, hunk by hunk;
+  - for each change, a short paragraph on the reason for it (what the problem was) and how it is addressed.
+
+  Nothing is pushed and no next group starts until I approve it. For anything going to GOALS, the stricter rule below also applies.
 - **GOALS (`upstream`) is strictly protected.** I have push rights there, but:
   - Never push to `upstream`. Never merge, close or approve anything on GOALS (`gh pr merge` is forbidden).
   - Nothing you wrote, ported, edited or reformatted reaches GOALS until I have reviewed and approved it **line by line**. Before any PR to GOALS, show me the full diff against `upstream/master`, hunk by hunk, and wait for my approval of each hunk. If anything changes after my approval, show me the changed lines again.

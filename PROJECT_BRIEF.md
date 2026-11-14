@@ -141,7 +141,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
   - 1d extinguished and intrinsic contcube profiles, with distinct keys and `'fCON'`.
   - 1e (`read_cretacube` `nz`, no effect) skipped as planned.
   - Tests in `tests/M3/` (work folder) all pass; failing cases first, including the local version for 1b and 1d.
-  - Not pushed. Waiting for my review before group 2.
+  - Not pushed. Shown to me hunk by hunk under the review rule (CLAUDE.md §2, 2026-11-14). Waiting for my approval before any push or group 2.
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
@@ -495,6 +495,11 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - **D8:** my input files (inpars, opt, line tables, CRETA parameter files) stay out of the shipped defaults.
   - **D2–D6:** when we reach each group, show me the options, the current GOALS behaviour and your recommendation.
   - Work one group at a time. Group 1 first, then stop for my review.
+- 2026-11-14: **Standing rule: review of every code change** (CLAUDE.md §2). For every code change, on any branch, show me:
+  - the full diff, hunk by hunk;
+  - for each change, a short paragraph on the reason for it (what the problem was) and how it is addressed.
+
+  Nothing is pushed and no next group starts until I approve it. GOALS changes also follow the GOALS rule. Applied first to M3 group 1 (`6d62e73`..`2263c17`).
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
