@@ -471,7 +471,7 @@ class specmod:
 
     def read_spec(self, file_name, xy=None, file_dir='./extractions/', extract='Flux_st', trim=True,
                   keep_next=False, z=0., is_SED=False, read_columns=None, flux_unc=None,
-                  wave_min=None, wave_max=None, rwave_min=None, rwave_max=None):
+                  wave_min=None, wave_max=None, rwave_min=None, rwave_max=None, flux_scale=1.):
         """
         file_name: [string] Name of the file to be read. It can be a plain text file (.txt, .dat) with wavelength, flux and
                    flux uncertainty columns, a .csv file from CRETA, or a .fits cube from CRETA
@@ -490,6 +490,7 @@ class specmod:
         wave_max:  [float] Maximum observed wavelength to be kept in the spectrum
         rwave_min: [float] Minimum rest-frame wavelength to be kept in the spectrum
         rwave_max: [float] Maximum rest-frame wavelength to be kept in the spectrum
+        flux_scale: [float] Factor by which the fluxes and their uncertainties are multiplied (default: 1)
         """
         
         if file_dir == 'input/data/': 
@@ -620,8 +621,8 @@ class specmod:
 
         self.z = z
         self.waves = waves / (1+z)
-        self.fluxes = fluxes / (1+z)
-        self.flux_uncs = flux_uncs / (1+z)   
+        self.fluxes = fluxes / (1+z) * flux_scale
+        self.flux_uncs = flux_uncs / (1+z) * flux_scale
         self.masks = masks
         self.bandnames = bandnames
         self.header = header
