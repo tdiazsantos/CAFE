@@ -176,6 +176,23 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - Spitzer IRS and MIRI LRS support.
 - Docs.
 
+### GOALS bugs found after M2 (logged 2026-11-14; not fixed)
+Each is in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers are for `dev`. A fix goes on a branch from `upstream/master`, only with my approval and after my line-by-line review (CLAUDE.md §2).
+- **G1: the photometry file's line order changes the model grid.** `read_phot` (`cafe.py:644`) keeps the file order, and `CAFE_prof_generator` (`cafe_helper.py:805`, `:813`) extends the model grid from `phot_dict['wave'][0]` for the bluest band and `[-1]` for the reddest.
+  - Failing case: `tests/M3/test_G1_unsorted_phot.py` (work folder), with the same 3 points in ascending and in descending order (stubbed fit).
+    - Ascending: the grid runs from 1.5 to 231 µm.
+    - Descending: the grid stops at 30 µm, and the 70 and 160 µm points both get the model's value at 30 µm (3.35 Jy, `np.interp`'s end value), without a warning.
+  - When: any photometry file that is not in ascending wavelength order.
+- **G2: the `'Feat'` branch of `make_profcube` cannot run** (`cafe_helper.py:1171–1181`).
+  - It uses an undefined `param`, adds a string to a list (`prof_pars+'_Wave'`), and creates a `ValueError` without raising it.
+  - No caller asks for a `'Feat'` profile: `save_products` asks only for `'Comp'` and `'Comp_0'`, and so do my pre-sync scripts. So it doesn't break the normal workflow.
+- **G3: `synphot` with `DoFilter = True` converts the model to f_λ in place, once per filter** (`cafe_lib.py:295`, `flux *= 2.998e14 / wave**2`, inside the loop over filters).
+  - Each filter after the first gets the conversion again. The caller's model array (`fluxMod`) is also changed.
+  - Failing case: `tests/M3/test_G3_synphot_dofilter.py`, synthetic flat f_ν = 1 Jy model and three box filters. Result: 1.0116, 6.7×10¹⁰ and 1.9×10²⁰, instead of the formula's 1.0116, 1.0324 and 1.0566. Each filter on its own is right. The input array ends between 3.7×10²⁸ and 2.7×10⁴³.
+  - My local version (`135aa70`) has the same line.
+  - When: every fit with the shipped `photometry_opt.cafe` (`DoFilter = True`) and two or more photometric points with non-zero widths.
+  - Effect in a real fit (M3 group 2 real fit, 2026-11-14): the fit drove the whole model to about 0 (spectral χ²/N = 1.6×10⁷). This breaks the normal workflow.
+
 ## Commands
 All verified 2026-11-04 (M0). `conda`, `mamba` and `gh` are in `~/miniforge3/bin`, which is not on the default PATH. The `env VAR=… cmd` form works in both tcsh and zsh.
 
@@ -540,6 +557,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - D6: `stitch_to_shortest` at no-overlap gaps.
 
 - Which real cube is the M4 benchmark (cube-fit performance).
+- Whether and when to fix the GOALS bugs G1 and G3 (2026-11-14; see "GOALS bugs found after M2"). G3 breaks every photometry fit with the shipped `photometry_opt.cafe`.
 - A separate physics decision, for later (noted 2026-11-14 with D2): add a systematic error floor to the spectral uncertainties? In the tutorial fit (the M3 fixture), the median quoted error is 0.028% of the flux, while the model misses the data by 1.2% (median), so χ²/N ≈ 21,000. With errors like these, the spectrum outweighs everything else in the fit, photometry included.
 
 ### Biases and small issues flagged
@@ -560,4 +578,4 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-14: `calc_phot_weights` (D2), R₀: it is estimated from the mean sampling over the whole spectrum, assuming 2 channels per resolution element. In the tutorial spectrum R₀ = 2,513, while the sampling at 24 µm gives 2,000. Not acted on.
 - 2026-11-14: `make_profcube` calls `get_model_fluxes` once per profile per spaxel. With the 10 contcube profiles of M3 1d (3 before), building the contcube takes about 3.3× as long. It doesn't matter for 1D spectra, but it adds up for cubes. Information for M4.
 - 2026-11-14: The contcube `WAVE` table is float32 (since M1 item H7). In the tutorial spectrum, the sub-band overlaps hold wavelengths only 2×10⁻⁷ µm apart, which float32 cannot separate. So 179 adjacent `WAVE` entries are equal; the fit's float64 grid is strictly increasing. This was already in the fixture contcube, before group 2. Not acted on.
-- 2026-11-14: `CAFE_prof_generator` assumes the photometry is sorted by wavelength. It extends the model grid from `phot_dict['wave'][0]` and `[-1]`, and `read_phot` doesn't sort. With an unsorted photometry file, the grid may stop short of the bluest or reddest band. Not acted on.
+- 2026-11-14: `CAFE_prof_generator` assumes the photometry is sorted by wavelength. It extends the model grid from `phot_dict['wave'][0]` and `[-1]`, and `read_phot` doesn't sort. With an unsorted photometry file, the grid may stop short of the bluest or reddest band. Not acted on. *(Logged as GOALS bug G1 the same day, with a failing case; see "GOALS bugs found after M2".)*
