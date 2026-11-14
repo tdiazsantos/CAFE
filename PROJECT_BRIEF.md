@@ -142,7 +142,13 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
   - 1e (`read_cretacube` `nz`, no effect) skipped as planned.
   - Tests in `tests/M3/` (work folder) all pass; failing cases first, including the local version for 1b and 1d.
   - Shown to me hunk by hunk under the review rule (CLAUDE.md §2). Approved 2026-11-14 and pushed with my OK (`8e0291b`→`f45a02b`).
-- **Group 2 (photometry) started 2026-11-14.** D2 (the photometry weighting formula) shown to me with options, the current GOALS behaviour and a recommendation. Nothing ported yet; waiting for my decision on D2.
+- **Group 2 (photometry) done 2026-11-14** on `dev`, after my decision on D2 (option C). 4 commits `2063569`..`57a8bf7` (with the co-author trailer):
+  - 2a: the contcube is built on the fit's model grid with photometry (`make_profcube` passes the fit's `phot_dict`);
+  - 2b: `fFTS0` in `CompFluxes_0`;
+  - 2c: the `cafeplot` y-range includes the photometry;
+  - 2d + 2e (one commit, so that no step leaves the weights computed but unused): `calc_phot_weights` (option C, un-sort through a new array), called once in `cafe_grinder`, applied in `chisquare`.
+  - Tests in `tests/M3/` (work folder) all pass. The failing cases were run first, including the local un-sort on NumPy 1.26.
+  - Not pushed. Waiting for my hunk-by-hunk approval before any push or group 3.
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
@@ -274,11 +280,21 @@ cd /Users/tanio/pywork/cafe_work/tests/M3/out/1a && env PYTHONDONTWRITEBYTECODE=
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/1b && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../test_1b_ignore_DQ.py /Users/tanio/Sync/pywork/CAFE
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_1c_fitParsErr.py /Users/tanio/Sync/pywork/CAFE out/1c
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_1d_contcube.py /Users/tanio/Sync/pywork/CAFE out/1d /Users/tanio/pywork/cafe_work/cmp/local-wip
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_2a_profcube_phot.py /Users/tanio/Sync/pywork/CAFE out/2a
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_2b_fFTS0.py /Users/tanio/Sync/pywork/CAFE out/2b
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_2c_plot_ylim.py /Users/tanio/Sync/pywork/CAFE out/2c
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_2de_phot_weights.py /Users/tanio/Sync/pywork/CAFE
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/local-wip ~/miniforge3/envs/cafe-legacy/bin/python test_2d_local_unsort.py
 ```
 - **Fixture:** made 2026-11-14 with code `21e0cbf`, which equals GOALS `master` `ca10c84`. It is the NGC7469 tutorial spectrum fitted with `inpars_jwst_miri_AGN.ini` and `default_opt.cafe` (z = 0.0163), in 42.5 s.
 - **How the product tests use it:** they run the real `fit_spec` with only `cafe_grinder` replaced by the fixture's parameters (`tests/M3/common.py`), so all products are written by the code under test.
 - **Test 1b:** uses a copy of the M1 CRETA cube with DQ = 1 on 10 channels of the centre spaxel. The original cube has no flagged channels.
 - **Result 2026-11-14:** all four tests pass. Smoke test: 18/18 (`logs/smoke_dev_M3g1.txt`).
+- **Group 2 tests:**
+  - `stub_fit_spec(..., phot=True)` adds 3 synthetic photometric points outside the spectrum (`inputs/phot3_obs.txt`) and uses `inputs/opt_fitphot.cafe` (`default_opt.cafe` with `FitPhot = True`).
+  - Test 2de uses synthetic data only (no fit; lmfit's `Minimizer` and `get_model_fluxes` are replaced by stubs). It also passes in `cafe-legacy` (NumPy 1.26).
+  - The "before" runs use the detached worktree `cmp/dev-before` in the work folder.
+  - Result 2026-11-14 on `57a8bf7`: all 8 M3 tests pass (54 checks). Smoke test: 18/18, the same output as group 1 (`logs/smoke_dev_M3g2.txt`).
 
 ## Decisions & biases
 All entries are dated. Record a decision only after I approve it. Log biases as soon as you notice them. List defaults that still need my OK under "Awaiting my OK".
@@ -539,3 +555,5 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-14: `calc_phot_weights` (D2), end points: the first and last points of the combined spectral + photometric wavelength list get the full gap to their one neighbour as Δλ, while interior points get half the distance between their two neighbours. So an end photometric point (e.g. the longest far-IR band) gets about twice its share. Not acted on.
 - 2026-11-14: `calc_phot_weights` (D2), R₀: it is estimated from the mean sampling over the whole spectrum, assuming 2 channels per resolution element. In the tutorial spectrum R₀ = 2,513, while the sampling at 24 µm gives 2,000. Not acted on.
 - 2026-11-14: `make_profcube` calls `get_model_fluxes` once per profile per spaxel. With the 10 contcube profiles of M3 1d (3 before), building the contcube takes about 3.3× as long. It doesn't matter for 1D spectra, but it adds up for cubes. Information for M4.
+- 2026-11-14: The contcube `WAVE` table is float32 (since M1 item H7). In the tutorial spectrum, the sub-band overlaps hold wavelengths only 2×10⁻⁷ µm apart, which float32 cannot separate. So 179 adjacent `WAVE` entries are equal; the fit's float64 grid is strictly increasing. This was already in the fixture contcube, before group 2. Not acted on.
+- 2026-11-14: `CAFE_prof_generator` assumes the photometry is sorted by wavelength. It extends the model grid from `phot_dict['wave'][0]` and `[-1]`, and `read_phot` doesn't sort. With an unsorted photometry file, the grid may stop short of the bluest or reddest band. Not acted on.
