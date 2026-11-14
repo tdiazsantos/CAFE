@@ -652,6 +652,7 @@ class specmod:
 
         print('Phot data:',file_dir+file_name)
         tab = np.genfromtxt(file_dir+file_name, comments='#', dtype='str')
+        tab = tab[np.argsort(tab[:,1].astype(float))]
         self.pwaves = tab[:,1].astype(float) / (1+self.z)
         self.pfluxes = tab[:,2].astype(float) / (1+self.z)
         self.pflux_uncs = tab[:,3].astype(float) / (1+self.z)
