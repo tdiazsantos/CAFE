@@ -1666,8 +1666,8 @@ def cafeplot(
     ax11.tick_params(axis="y", labelsize=10)
     # ax11.tick_params(direction='in', which='both', length=4, width=0.8, right=True)
 
-    min_flux = np.nanmin(spec["flux"][np.r_[0:5, -5 : len(spec["flux"])]])
-    max_flux = np.nanmax(spec["flux"][np.r_[0:5, -5 : len(spec["flux"])]])
+    min_flux = np.nanmin(flux[np.r_[0:5, -5 : len(flux)]])
+    max_flux = np.nanmax(flux[np.r_[0:5, -5 : len(flux)]])
 
     ax1.legend(loc="lower right")
     ax1.tick_params(direction="in", which="both", length=6, width=1, top=True)
