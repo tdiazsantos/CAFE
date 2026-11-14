@@ -182,7 +182,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - Spitzer IRS and MIRI LRS support.
 - Docs.
 
-### GOALS bugs found after M2 (logged 2026-11-14; not fixed)
+### GOALS bugs found after M2 (logged 2026-11-14)
 Each is in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers are for `dev`. A fix goes on a branch from `upstream/master`, only with my approval and after my line-by-line review (CLAUDE.md §2).
 - **G1: the photometry file's line order changes the model grid.** `read_phot` (`cafe.py:644`) keeps the file order, and `CAFE_prof_generator` (`cafe_helper.py:805`, `:813`) extends the model grid from `phot_dict['wave'][0]` for the bluest band and `[-1]` for the reddest.
   - Failing case: `tests/M3/test_G1_unsorted_phot.py` (work folder), with the same 3 points in ascending and in descending order (stubbed fit).
@@ -199,6 +199,13 @@ Each is in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers are for 
   - My local version (`135aa70`) has the same line.
   - When: every fit with the shipped `photometry_opt.cafe` (`DoFilter = True`) and two or more photometric points with non-zero widths.
   - Effect in a real fit (M3 group 2 real fit, 2026-11-14): the fit drove the whole model to about 0 (spectral χ²/N = 1.6×10⁷). This breaks the normal workflow.
+- **GOALS round for G3 and G1 (2026-11-14).** Branch `GOALS-photometry-fixes-2026-11` from `upstream/master` (`ca10c84`), in the worktree `cmp/GOALS-photometry-fixes` (work folder). 2 commits, mine, no co-author trailer; 2 files, +3/−2, 2 hunks:
+  - `f44f96e` G3: `synphot` puts the f_λ conversion into its own array (`flux_lam`). Rebinding `flux` instead would leave the input unchanged but still compound inside the loop (checked).
+  - `c0bd2c6` G1: `read_phot` sorts the table by wavelength.
+  - Failing cases first, on the branch: test G3 failed 3/3 before and passes 3/3 after, in `cafe-dev` and `cafe-legacy`; test G1 failed 2 of 3 checks before and passes 3/3 after. Smoke test: 18/18, the same output as the last GOALS round apart from the path.
+  - Real fit on the branch with `photometry_opt.cafe` (`DoFilter = True`) and the 5 points: it converges. Spectral χ²/N = 20,700, as without photometry; model photometry 0.28, 0.26, 3.65, 1.80 and 0.17 Jy. GOALS has no photometry weights (D2), so the photometry adds 1,130 to a χ² of 2.0×10⁸.
+  - Diff in `reports/GOALS-photometry-fixes-2026-11.diff`; draft PR title and description in `reports/PR_GOALS-photometry-fixes-2026-11_body.md` (work folder).
+  - Not pushed. Waiting for my hunk-by-hunk approval, then my OK to push to my fork and to open the PR.
 
 ## Commands
 All verified 2026-11-04 (M0). `conda`, `mamba` and `gh` are in `~/miniforge3/bin`, which is not on the default PATH. The `env VAR=… cmd` form works in both tcsh and zsh.
@@ -313,6 +320,9 @@ cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBA
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_G3_synphot_dofilter.py /Users/tanio/Sync/pywork/CAFE
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/realfit_phot5 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../realfit_phot5.py /Users/tanio/Sync/pywork/CAFE
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/realfit_phot5_nofilter && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../realfit_phot5.py /Users/tanio/Sync/pywork/CAFE /Users/tanio/pywork/cafe_work/tests/M3/inputs/opt_fitphot.cafe
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes ~/miniforge3/envs/cafe-dev/bin/python test_G3_synphot_dofilter.py /Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes ~/miniforge3/envs/cafe-dev/bin/python test_G1_unsorted_phot.py /Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes out/G1_goals_after
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/realfit_phot5_goalsfix && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes ~/miniforge3/envs/cafe-dev/bin/python ../../realfit_phot5.py /Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes
 ```
 - **Fixture:** made 2026-11-14 with code `21e0cbf`, which equals GOALS `master` `ca10c84`. It is the NGC7469 tutorial spectrum fitted with `inpars_jwst_miri_AGN.ini` and `default_opt.cafe` (z = 0.0163), in 42.5 s.
 - **How the product tests use it:** they run the real `fit_spec` with only `cafe_grinder` replaced by the fixture's parameters (`tests/M3/common.py`), so all products are written by the code under test.
