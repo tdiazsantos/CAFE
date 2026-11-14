@@ -502,6 +502,10 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 
   Nothing is pushed and no next group starts until I approve it. GOALS changes also follow the GOALS rule. Applied first to M3 group 1 (`6d62e73`..`2263c17`).
 - 2026-11-14: **M3 group 1 approved.** `dev` pushed to my fork with my OK (`8e0291b`→`f45a02b`, 7 commits, all mine, each with the Claude co-author trailer allowed on fork-only M3 commits). Then group 2 starts with D2 only, and stops for my decision before anything is ported.
+- 2026-11-14: **D2: option C.**
+  - `calc_phot_weights` keeps only the interval term R₀·Δλ/λ, without the factor (median SNR_spec / median SNR_phot)². So each photometric point keeps its own uncertainty.
+  - Before: GOALS weighted photometry by plain 1/σ²; my local formula had the SNR factor.
+  - Then port group 2, each change shown hunk by hunk with its reason (standing rule).
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -510,13 +514,13 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 
 ### Awaiting my OK
 - M3 decisions, from `reports/M3_plan_2026-11-14.md` (2026-11-14). For each, when we reach its group: show me the options, the current GOALS behaviour and your recommendation.
-  - D2: the photometry weighting formula in `calc_phot_weights`.
   - D3a–e: flux normalisation and #11: a relative lower-bound test in `check_fit_pars`; what `scale_flux_params` scales (line and PAH `_Peak` value, stderr and bounds; not `o_*_Peak` or `_FLX`); a parcube fully in physical units; products from continuum profiles rebuilt from the unscaled spectrum; whether `norm_factor` is still needed after #11.
   - D4: the reference-PAH continuum window (±γ_PAH or ±10,000 km/s).
   - D5: the photometry-only model grid density.
   - D6: `stitch_to_shortest` at no-overlap gaps.
 
 - Which real cube is the M4 benchmark (cube-fit performance).
+- A separate physics decision, for later (noted 2026-11-14 with D2): add a systematic error floor to the spectral uncertainties? In the tutorial fit (the M3 fixture), the median quoted error is 0.028% of the flux, while the model misses the data by 1.2% (median), so χ²/N ≈ 21,000. With errors like these, the spectrum outweighs everything else in the fit, photometry included.
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
@@ -532,3 +536,6 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-06: After a `git stash` / `git stash pop` in the worktree `cmp/m2-fixes`, its index was empty: every file was listed as deleted and untracked. No data was lost. The working tree matched the stash byte for byte, and the commits were intact. `git read-tree HEAD` rebuilt the index. The cause is unknown; the worktree's git data lives in the Syncthing-synced `.git` (see the first entry). `git stash` is no longer used here.
 - 2026-11-06: `CRETA/cube_handler.py:129` (`self.delta_factor_list * len(self.rs)`) throws its result away, the same pattern as #9. It has no effect, because `delta_factor_list` is never read. For the dead-code clean-up under "Later".
 - 2026-11-06: The CRETA `.py` files have CRLF line endings, while the CAFE files have LF. The M2 edits keep each file's endings.
+- 2026-11-14: `calc_phot_weights` (D2), end points: the first and last points of the combined spectral + photometric wavelength list get the full gap to their one neighbour as Δλ, while interior points get half the distance between their two neighbours. So an end photometric point (e.g. the longest far-IR band) gets about twice its share. Not acted on.
+- 2026-11-14: `calc_phot_weights` (D2), R₀: it is estimated from the mean sampling over the whole spectrum, assuming 2 channels per resolution element. In the tutorial spectrum R₀ = 2,513, while the sampling at 24 µm gives 2,000. Not acted on.
+- 2026-11-14: `make_profcube` calls `get_model_fluxes` once per profile per spaxel. With the 10 contcube profiles of M3 1d (3 before), building the contcube takes about 3.3× as long. It doesn't matter for 1D spectra, but it adds up for cubes. Information for M4.
