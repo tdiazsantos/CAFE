@@ -1124,6 +1124,7 @@ def get_model_fluxes(params, wave, cont_profs, comps=False, phot_dict=None):
         )
         fDST_0 = fCIR_0 + fCLD_0 + fCOO_0 + fWRM_0 + fHOT_0
         fSRC_0 = fSTR_0 + fSTB_0 + fDSK_0
+        fFTS_0 = fPAH_0 + fLIN_0
         CompFluxes_0 = {
             "wave": waveMod,
             "fCIR0": fCIR_0,
@@ -1139,6 +1140,7 @@ def get_model_fluxes(params, wave, cont_profs, comps=False, phot_dict=None):
             "fCON0": fCON_0,
             "fDST0": fDST_0,
             "fSRC0": fSRC_0,
+            "fFTS0": fFTS_0,
             "STB0_100": fSTB_0_100,
             "STB0_010": fSTB_0_010,
             "STB0_002": fSTB_0_002,
