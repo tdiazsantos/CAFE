@@ -292,11 +292,11 @@ def synphot(
 
         else:
             # Convert flux density to wavelength units
-            flux *= 2.998e14 / wave**2
+            flux_lam = flux * 2.998e14 / wave**2
             # TDS I think the integration was wrong (the 1+z's and logs). That's why the photometry looked "funny"
             # Now everything is done in rest-frame since the filters/photometry (and the photo-spec itself) is already in rest-frame
             log_fwaves = np.log(fwaves[i])
-            flux_fwaves = np.interp(log_fwaves, log_wave, flux)
+            flux_fwaves = np.interp(log_fwaves, log_wave, flux_lam)
             trans = ftrans[i] / simpson(fwaves[i] * ftrans[i], fwaves[i])
             flux_conv = simpson(fwaves[i] * trans * flux_fwaves, fwaves[i])
             wave_conv = simpson(fwaves[i] * trans * fwaves[i], fwaves[i])
