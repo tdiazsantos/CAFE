@@ -755,7 +755,8 @@ class specmod:
         
         ## Save fCON cube to disk
         cube_gen = CAFE_cube_generator(self)
-        self.contcube = cube_gen.make_profcube(self.inparfile, self.optfile, prof_names={'fCon':['Comp', 'fCON'], 'fDSK':['Comp', 'fDSK'], 'fHOT':['Comp', 'fHOT']})
+        self.contcube = cube_gen.make_profcube(self.inparfile, self.optfile, prof_names={'fCON':['Comp', 'fCON'], 'fDSK':['Comp', 'fDSK'], 'fHOT':['Comp', 'fHOT'], 'fWRM':['Comp', 'fWRM'], 'fCOO':['Comp', 'fCOO'],
+                                                                                         'fCON0':['Comp_0', 'fCON0'], 'fDSK0':['Comp_0', 'fDSK0'], 'fHOT0':['Comp_0', 'fHOT0'], 'fWRM0':['Comp_0', 'fWRM0'], 'fCOO0':['Comp_0', 'fCOO0']})
         self.contcube_name = self.result_file_name+'_contcube'
         print('Saving total continuum profile in cube to disk:',self.product_dir+self.contcube_name+'.fits')
         self.contcube.writeto(self.product_dir+self.contcube_name+'.fits', overwrite=True)

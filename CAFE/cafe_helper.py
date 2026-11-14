@@ -1165,6 +1165,8 @@ class CAFE_cube_generator:
                     CompFluxes, CompFluxes_0, extComps, e0, tau0, vgrad = get_model_fluxes(params, self.wave, self.cont_profs, comps=True)
                     if prof_pars[0] == 'Comp':
                         profcube[prof_name].data[:, j, i] = CompFluxes[prof_pars[1]]
+                    elif prof_pars[0] == 'Comp_0':
+                        profcube[prof_name].data[:, j, i] = CompFluxes_0[prof_pars[1]]
                     
                     elif prof_pars[0] == 'Feat':
                         gauss, drude, gauss_opc = get_feat_pars(params, apply_vgrad2waves=True)
