@@ -133,7 +133,15 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
 - After I merge, sync my fork's `master` with GOALS again, and ask before pushing.
 
-### M3 — My local changes *(approved 2026-11-14; plan in `reports/M3_plan_2026-11-14.md`, waiting for my review)*
+### M3 — My local changes *(approved 2026-11-14; plan in `reports/M3_plan_2026-11-14.md`)*
+- **Group 1 (I/O and products) done 2026-11-14** on `dev`, 4 commits `6d62e73`..`2263c17` (with the co-author trailer):
+  - 1a `read_spec(flux_scale=…)`;
+  - 1b `read_spec(ignore_DQ=…)`, fixed to `np.zeros_like(masks)`;
+  - 1c `fitParsErr` in the `.asdf`;
+  - 1d extinguished and intrinsic contcube profiles, with distinct keys and `'fCON'`.
+  - 1e (`read_cretacube` `nz`, no effect) skipped as planned.
+  - Tests in `tests/M3/` (work folder) all pass; failing cases first, including the local version for 1b and 1d.
+  - Not pushed. Waiting for my review before group 2.
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
@@ -256,6 +264,20 @@ Result 2026-11-06:
 - Before the fixes, all four checks fail: the old strength was off by a factor of about 10¹⁸.
 - After the fixes, all pass. The new strength over the `line_table` formula is exactly 2√(2 ln 2)/2.35482 = 1 + 1.9e-8, because `save_asdf` and `gauss_prof` use the rounded 2.35482. The new strength over the `gauss_prof` integral is 0.9999 (narrow-line approximation and `gauss_prof`'s sampled profile).
 - Smoke test: 18/18 import, 0 failed. The output is identical to `logs/smoke_GOALS-small-fixes.txt` apart from the path (`logs/smoke_GOALS-physics-fixes.txt`).
+
+**M3 shared fixture and tests** (work folder; code on `PYTHONPATH`, `cafe-dev`)
+```
+cd /Users/tanio/pywork/cafe_work/tests/M3/fixture
+env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../make_fixture.py /Users/tanio/Sync/pywork/CAFE
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/1a && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../test_1a_flux_scale.py /Users/tanio/Sync/pywork/CAFE
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/1b && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../test_1b_ignore_DQ.py /Users/tanio/Sync/pywork/CAFE
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_1c_fitParsErr.py /Users/tanio/Sync/pywork/CAFE out/1c
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_1d_contcube.py /Users/tanio/Sync/pywork/CAFE out/1d /Users/tanio/pywork/cafe_work/cmp/local-wip
+```
+- **Fixture:** made 2026-11-14 with code `21e0cbf`, which equals GOALS `master` `ca10c84`. It is the NGC7469 tutorial spectrum fitted with `inpars_jwst_miri_AGN.ini` and `default_opt.cafe` (z = 0.0163), in 42.5 s.
+- **How the product tests use it:** they run the real `fit_spec` with only `cafe_grinder` replaced by the fixture's parameters (`tests/M3/common.py`), so all products are written by the code under test.
+- **Test 1b:** uses a copy of the M1 CRETA cube with DQ = 1 on 10 channels of the centre spaxel. The original cube has no flagged channels.
+- **Result 2026-11-14:** all four tests pass. Smoke test: 18/18 (`logs/smoke_dev_M3g1.txt`).
 
 ## Decisions & biases
 All entries are dated. Record a decision only after I approve it. Log biases as soon as you notice them. List defaults that still need my OK under "Awaiting my OK".
