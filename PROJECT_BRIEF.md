@@ -154,7 +154,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
     - With the shipped `photometry_opt.cafe` (`DoFilter = True`): broken by GOALS bug G3. The fit drove the model to about 0 (spectral χ²/N = 1.6×10⁷; model photometry 0).
     - Also run with `DoFilter = False` (`inputs/opt_fitphot.cafe`), so that group 2 is tested end to end. Spectral χ²/N = 20,690, as in the fixture fit without photometry (≈ 21,000). Weights 870–2,300.
     - In that fit, the photometry adds 8.4×10⁵ to χ², against 2.0×10⁸ from the spectrum (0.4%), so the spectrum still decides the fit. The model is 18× and 109× below PACS70 and PACS160 (cold and cirrus dust are fixed to 0 in this inpars file), and 2.5–2.9× above the two near-IR points. This is the error-floor question under "Awaiting my OK".
-  - Not pushed. Waiting for my approval of the new commit 4 before any push or group 3.
+  - New commit 4 approved 2026-11-14. Not pushed. Group 3 waits for the short GOALS round for G3 and G1 (see "GOALS bugs found after M2").
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
@@ -192,6 +192,7 @@ Each is in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers are for 
 - **G2: the `'Feat'` branch of `make_profcube` cannot run** (`cafe_helper.py:1171–1181`).
   - It uses an undefined `param`, adds a string to a list (`prof_pars+'_Wave'`), and creates a `ValueError` without raising it.
   - No caller asks for a `'Feat'` profile: `save_products` asks only for `'Comp'` and `'Comp_0'`, and so do my pre-sync scripts. So it doesn't break the normal workflow.
+  - Stays for the dead-code clean-up (my decision, 2026-11-14).
 - **G3: `synphot` with `DoFilter = True` converts the model to f_λ in place, once per filter** (`cafe_lib.py:295`, `flux *= 2.998e14 / wave**2`, inside the loop over filters).
   - Each filter after the first gets the conversion again. The caller's model array (`fluxMod`) is also changed.
   - Failing case: `tests/M3/test_G3_synphot_dofilter.py`, synthetic flat f_ν = 1 Jy model and three box filters. Result: 1.0116, 6.7×10¹⁰ and 1.9×10²⁰, instead of the formula's 1.0116, 1.0324 and 1.0566. Each filter on its own is right. The input array ends between 3.7×10²⁸ and 2.7×10⁴³.
@@ -557,6 +558,12 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Faithfulness to my old code is not a goal. Write each change in the simplest form that gives the same result (personal rule on simplicity).
   - If my old code can be replaced by something shorter, or by an existing NumPy, astropy or lmfit function, do that, and say so in the change's paragraph.
   - Applied first to group 2 commit 4: `calc_phot_weights` (47 lines) became five lines with `np.gradient` in `cafe_grinder`.
+- 2026-11-14: **New commit 4 (`d7f07bb`) and CLAUDE.md §8 approved.**
+- 2026-11-14: **A short GOALS round for G3 and G1, before group 3.** On a branch from `upstream/master`, named after its content (`GOALS-photometry-fixes-2026-11`). One commit each, minimal, each with its failing case shown first. These commits go to GOALS, so no Claude co-author trailer.
+  - G3: in `synphot`, do the unit conversion on a copy, so the model isn't modified in place.
+  - G1: `read_phot` sorts the photometry by wavelength.
+  - Then, on that branch, rerun the photometry fit with `photometry_opt.cafe` (`DoFilter = True`) to confirm it works. Show me the diff hunk by hunk with the reason paragraphs.
+  - G2 stays for the dead-code clean-up.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -571,7 +578,6 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - D6: `stitch_to_shortest` at no-overlap gaps.
 
 - Which real cube is the M4 benchmark (cube-fit performance).
-- Whether and when to fix the GOALS bugs G1 and G3 (2026-11-14; see "GOALS bugs found after M2"). G3 breaks every photometry fit with the shipped `photometry_opt.cafe`.
 - A separate physics decision, for later (noted 2026-11-14 with D2): add a systematic error floor to the spectral uncertainties? In the tutorial fit (the M3 fixture), the median quoted error is 0.028% of the flux, while the model misses the data by 1.2% (median), so χ²/N ≈ 21,000. With errors like these, the spectrum outweighs everything else in the fit, photometry included.
 
 ### Biases and small issues flagged
