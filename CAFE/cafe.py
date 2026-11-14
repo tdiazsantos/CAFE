@@ -43,6 +43,15 @@ def cafe_grinder(self, params, spec, phot):
     niter = 1
     show = False
     f_pert = 1.01
+
+    if phot is not None:
+        # Weight = R_0 * dl / l: the independent spectral elements in the point's share of the wavelength range, with R_0 from the
+        # spectral sampling (2 channels per element) and dl half the distance between its neighbours (the full gap at the ends)
+        R_0 = np.mean(spec['wave']) * (spec['wave'].size / 2) / (spec['wave'][-1] - spec['wave'][0])
+        wave = np.concatenate((spec['wave'], phot['wave']))
+        s = np.argsort(wave)
+        dl = np.gradient(wave[s])[np.argsort(s)]
+        phot['weight'] = R_0 * dl[spec['wave'].size:] / phot['wave']
     
     while acceptFit is False:
         

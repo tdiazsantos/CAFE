@@ -422,7 +422,7 @@ def chisquare(params, spec, phot, cont_profs, show=True):
         return (spec["flux"] - model) * np.sqrt(weights)
     else:
         weights = np.concatenate(
-            (1.0 / spec["flux_unc"] ** 2, 1.0 / phot["flux_unc"] ** 2)
+            (1.0 / spec["flux_unc"] ** 2, phot["weight"] / phot["flux_unc"] ** 2)
         )
         flux = np.concatenate((spec["flux"], phot["flux"]))
         return (flux - model) * np.sqrt(weights)
