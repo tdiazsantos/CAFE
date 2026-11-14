@@ -332,6 +332,10 @@ cd /Users/tanio/pywork/cafe_work/tests/M3/out/weighting/W2246_C && env PYTHONDON
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/weighting/W2246_B && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../weighting_W2246.py /Users/tanio/Sync/pywork/CAFE B
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python floor_rule.py out/weighting/W2246_C/summary.npz
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/weighting/W2246_Cfloor && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../weighting_W2246.py /Users/tanio/Sync/pywork/CAFE Cfloor 0.056
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python synth_make.py /Users/tanio/Sync/pywork/CAFE
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/synth/C && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../synth_fit.py /Users/tanio/Sync/pywork/CAFE C
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/synth/Cfloor && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../synth_fit.py /Users/tanio/Sync/pywork/CAFE Cfloor
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/synth/Cscale && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../synth_fit.py /Users/tanio/Sync/pywork/CAFE Cscale
 ```
 - **Weighting test (2026-11-15):** `weighting_W2246.py` replaces only the χ² that `cafe_grinder` hands to lmfit (variants C, B, Cfloor). The W2246 tables reach `dev`'s code through `tests/M3/cafe_dir_W2246/` (symlinks to `dev`'s tables plus the five W2246 tables from the pre-sync folder), passed as `cafe_dir`.
 - **Fixture:** made 2026-11-14 with code `21e0cbf`, which equals GOALS `master` `ca10c84`. It is the NGC7469 tutorial spectrum fitted with `inpars_jwst_miri_AGN.ini` and `default_opt.cafe` (z = 0.0163), in 42.5 s.
@@ -587,6 +591,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-14: **Both hunks of the G3/G1 round approved, then a change of plan: no more pushes or PRs to GOALS** (CLAUDE.md §2).
   - From now on, fixes to GOALS bugs go only into `dev` on my fork. My fork's `master` stays equal to GOALS `master`.
   - Applied at once: cherry-pick `f44f96e` and `c0bd2c6` onto `dev`, delete the local branch `GOALS-photometry-fixes-2026-11` (never pushed), and rerun the photometry fit with `photometry_opt.cafe` on `dev`. Then wait before group 3.
+- 2026-11-15: **D2 option C stays as the photometry weighting.** The spectral error budget is a separate physics decision, to be settled with a synthetic known-truth test: one CAFE model with known parameters, a spectrum at realistic SNR, photometry, a ~5% calibration offset and a ~1–2% model mismatch. Variants: (1) option C alone; (2) option C plus a per-channel 1–2% model-error floor; (3) option C plus one free spectrum-to-photometry scale with a 5.6% prior. Run from the work folder, no code change on `dev`, then stop for my decision.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -613,6 +618,16 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Proposed rule instead: the instrument's documented calibration uncertainty, added in quadrature, as the photometric errors include calibration (MRS: 5.6 ± 0.7%, Argyriou et al. 2023, A&A 675, A111; Law et al. 2025, AJ 169, 67, refine the calibration without one headline number).
   - Open with it: a calibration error is mostly a common scale, which a per-channel floor only approximates; and whether `check_fit_pars` (which zeroes features below 0.5σ) should see the floored errors.
   - Seen in passing: inside the spectrum, WISE 22 µm is 1.4× the model fitted to the spectrum, while WISE 12 µm agrees to 0.4%.
+- 2026-11-15: **Spectral error budget: synthetic known-truth test done; my decision pending.**
+  - Truth: the M3 fixture model (NGC7469 tutorial fit) on the tutorial spectrum's 9,695 channels with its quoted errors (SNR ~3,500). Spectrum = 1.05 × truth × (1 + 1.5% rms sinusoidal ripple in log λ, 15 cycles) + noise. 8 photometric points (2.2, 3.6, 4.5, 24 [inside the spectrum], 70, 100, 160, 250 µm), 5% or 7% errors. One noise realisation (seed 20261115). Fits with `inpars_jwst_miri_AGN.ini` and `photometry_opt.cafe`.
+  - Variant (2) uses a 1.5% floor, equal to the injected mismatch: the best case, since in real data the level is not known.
+  - Photometry's share of χ²: (1) 0.26%, (2) 18%, (3) 0.16%. Spectral χ²/N with the quoted errors: 2,363, 2,518, 2,358; (2) is 0.70 with its floored errors.
+  - Shape parameters (truth → error): WRM_TMP −9.2%, +1.3%, −10.3%; COO_TMP −2.3%, +0.9%, −1.2%; COO_TAU +17%, −9%, +18%; WRM_TAU −24%, −4%, −43%; STB_TAU −76%, +4%, −60%.
+  - Model at the far-IR bands (70–250 µm) / truth: (1) 1.13–1.17, (2) 0.98–0.99, (3) 1.11–1.14. Near-IR bands (2.2, 3.5 µm): (1) 0.86, 0.82; (2) 1.01, 1.03; (3) 0.94, 0.86.
+  - Absolute fluxes / truth, cool dust (28% of the truth's flux), warm dust (24%), starburst (41%): (1) 0.98, 1.10, 0.84; (2) 1.05, 1.03, 0.87; (3) 0.98, 1.08, 0.93. Feature peaks (median of 79): 1.01, 1.05, 1.00.
+  - (3): the scale stays at its prior, s = 1.007 ± 0.044 (truth 1.05). Without a floor, the mismatch dominates the spectral χ², and the photometry has too little leverage to set s.
+  - (2) recovers the shape and the far-IR, but everything tied to the spectrum keeps the 5% calibration offset (features +4.8%, dust fluxes +3–5%, the 4.4 and 24 µm bands +5–7%). Floor plus scale together (not run) is the obvious candidate to remove it.
+  - In all three, the hot dust (3.4% of the truth's flux) is poorly recovered (fHOT 1.3–2.6×; HOT_TMP at its upper bound in (2)), and the AGN disc (0.002%) is unconstrained. This is a degeneracy, not an error-budget effect.
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
