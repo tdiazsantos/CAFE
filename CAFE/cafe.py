@@ -56,10 +56,7 @@ def cafe_grinder(self, params, spec, phot):
         method = 'least_squares' #'nelder' if len(spec['wave']) >= 10000 else 'least_squares'
         fitter = lm.Minimizer(chisquare, params, nan_policy='omit', fcn_args=(spec, phot, self.cont_profs, show))
         
-        try:
-            result = fitter.minimize(method=method, ftol=ftol, max_nfev=200*(len(params)+1))
-        except:
-            if result.success is not True: raise ValueError('The fit has not been successful.')
+        result = fitter.minimize(method=method, ftol=ftol, max_nfev=200*(len(params)+1))
 
         # Do checks on parameters and rerun fit if no errors are returned or the fit is unsuccessful
         if result.success == True:
@@ -73,7 +70,7 @@ def cafe_grinder(self, params, spec, phot):
             
         else:
             end = time.time()
-            raise RuntimeError('The fitter reached the maximum number of function evaluations after', result.nfev, 'steps in', np.round(end-start, 2)/60., 'minutes')
+            print('WARNING: The fitter reached the maximum number of function evaluations after', result.nfev, 'steps in', np.round(end-start, 2)/60., 'minutes')
             acceptFit = False
             
         if self.inopts['FIT OPTIONS']['FIT_CHK'] and niter < self.inopts['FIT OPTIONS']['MAX_LOOPS']:
@@ -186,7 +183,7 @@ class cubemod:
                  init_parcube=False,
                  cont_profs=None,
                  force_all_lines=False,
-                 pattern=None):
+                 pattern='snr'):
         """
         Main function setting up the parameters and profiles for cafe_grinder()
         """
@@ -194,7 +191,7 @@ class cubemod:
         cube = self.cube
         
         # Get the fitting sequence
-        snr_image = np.nansum(self.fluxes[10:20,:,:], axis=0)
+        snr_image = np.nansum(self.fluxes, axis=0)
         ind_seq, ref_ind_seq = get_fit_sequence(snr_image, sorting_seq=pattern)
         print('Highest SNR spaxel is:',np.flip((ind_seq[0][0],ind_seq[1][0])))
         
@@ -597,8 +594,8 @@ class specmod:
             raise ValueError('Observed and rest-frame wavelength limits cannot be set simultaneously')
         minWave = wave_min if wave_min is not None else np.nanmin(cube.waves[val_inds])
         maxWave = wave_max if wave_max is not None else np.nanmax(cube.waves[val_inds])
-        minWave = rwave_min*(1+z) if rwave_min is not None else np.nanmin(cube.waves[val_inds])
-        maxWave = rwave_max*(1+z) if rwave_max is not None else np.nanmax(cube.waves[val_inds])
+        minWave = rwave_min*(1+z) if rwave_min is not None else minWave
+        maxWave = rwave_max*(1+z) if rwave_max is not None else maxWave
 
         fit_wave_inds = (cube.waves[val_inds] >= minWave) & (cube.waves[val_inds] <= maxWave)
         
@@ -931,8 +928,8 @@ def plot_cafefit(asdf_fn):
     g = af['cafefit']['gauss']
     d = af['cafefit']['drude']
     
-    gauss = [g['wave'], g['width'], g['peak']]
-    drude = [d['wave'], d['width'], d['peak']]
+    gauss = [g['wave'], g['gamma'], g['peak']]
+    drude = [d['wave'], d['gamma'], d['peak']]
     
     spec_dict = {'wave':wave, 'flux':flux, 'flux_unc':flux_unc}
     

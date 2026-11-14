@@ -83,14 +83,14 @@ class creta:
         user = userAPI()
         # print(parfile_name)
         
-        if data_path[-1] != '/': data_path+'/'
-        if parfile_path[-1] != '/': parfile_path+'/'
+        if data_path[-1] != '/': data_path += '/'
+        if parfile_path[-1] != '/': parfile_path += '/'
 
         output_path = user.create_output_path(output_path)
 
         if PSFs_path is None:
             PSFs_path = self.creta_dir+'PSFs/'
-        if PSFs_path[-1] != '/': PSFs_path+'/'
+        if PSFs_path[-1] != '/': PSFs_path += '/'
 
         # Read the parameter file
         if parameter_file:
@@ -118,15 +118,13 @@ class creta:
             
             # Read the list of cubes in data
             files = os.listdir(data_path)
-            for i in files: #exclude hidden files from mac
-                if i.startswith('.'):
-                    files.remove(i)
+            #exclude hidden files from mac
+            files = [i for i in files if not i.startswith('.')]
             # Read the list of cubes in PSF
             if aperture_correction or convolve:
                 PSF_files = os.listdir(PSFs_path)
-                for i in PSF_files: #exclude hidden files from mac
-                    if i.startswith('.'):
-                        PSF_files.remove(i)
+                #exclude hidden files from mac
+                PSF_files = [i for i in PSF_files if not i.startswith('.')]
  
             # Check all requested cubes for extraction are in place
             files_sort = []
@@ -762,14 +760,14 @@ class creta:
         import time
         start_time = time.time()
 
-        if data_path[-1] != '/': data_path+'/'
-        if parfile_path[-1] != '/': parfile_path+'/'
+        if data_path[-1] != '/': data_path += '/'
+        if parfile_path[-1] != '/': parfile_path += '/'
 
         output_path = user.create_output_path(output_path)
 
         if PSFs_path is None:
             PSFs_path = self.creta_dir+'PSFs/'
-        if PSFs_path[-1] != '/': PSFs_path+'/'
+        if PSFs_path[-1] != '/': PSFs_path += '/'
 
 
         if parameter_file:
@@ -781,15 +779,13 @@ class creta:
 
             # Read the list of cubes in data
             files = os.listdir(data_path)
-            for i in files: #exclude hidden files from mac
-                if i.startswith('.'):
-                    files.remove(i)
+            #exclude hidden files from mac
+            files = [i for i in files if not i.startswith('.')]
             # Read the list of cubes in PSFs
             if aperture_correction or convolve:
                 PSF_files = os.listdir(PSFs_path)
-                for i in PSF_files: #exclude hidden files from mac
-                    if i.startswith('.'):
-                        PSF_files.remove(i)
+                #exclude hidden files from mac
+                PSF_files = [i for i in PSF_files if not i.startswith('.')]
  
             # Check all requested cubes for extraction are in place
             files_sort = []
@@ -864,7 +860,7 @@ class creta:
             CDELT3 = last_cube['CDELT3']
             
             nan_mask = DQ != 0
-            last_cube_data[nan_mask] = np.NaN 
+            last_cube_data[nan_mask] = np.nan 
             wcs = WCS(last_cube['headers'])
             ls = []
             for i in range(last_cube_data.shape[0]):
@@ -924,9 +920,8 @@ class creta:
         if aperture_correction or convolve:
             print('Loading PSFs')         
             PSF_files = os.listdir(PSFs_path)
-            for i in PSF_files: #exclude hidden files from mac
-                if i.startswith('.'):
-                    PSF_files.remove(i)  
+            #exclude hidden files from mac
+            PSF_files = [i for i in PSF_files if not i.startswith('.')]
             PSF_all = user.getSubCubes(PSFs_path, PSF_files, r, l_ap, point_source, True, centering, False, 0, 0, 1, convolve, ignore_DQ)         
             
         
