@@ -141,7 +141,8 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
   - 1d extinguished and intrinsic contcube profiles, with distinct keys and `'fCON'`.
   - 1e (`read_cretacube` `nz`, no effect) skipped as planned.
   - Tests in `tests/M3/` (work folder) all pass; failing cases first, including the local version for 1b and 1d.
-  - Not pushed. Shown to me hunk by hunk under the review rule (CLAUDE.md §2, 2026-11-14). Waiting for my approval before any push or group 2.
+  - Shown to me hunk by hunk under the review rule (CLAUDE.md §2). Approved 2026-11-14 and pushed with my OK (`8e0291b`→`f45a02b`).
+- **Group 2 (photometry) started 2026-11-14.** D2 (the photometry weighting formula) shown to me with options, the current GOALS behaviour and a recommendation. Nothing ported yet; waiting for my decision on D2.
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
@@ -500,6 +501,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - for each change, a short paragraph on the reason for it (what the problem was) and how it is addressed.
 
   Nothing is pushed and no next group starts until I approve it. GOALS changes also follow the GOALS rule. Applied first to M3 group 1 (`6d62e73`..`2263c17`).
+- 2026-11-14: **M3 group 1 approved.** `dev` pushed to my fork with my OK (`8e0291b`→`f45a02b`, 7 commits, all mine, each with the Claude co-author trailer allowed on fork-only M3 commits). Then group 2 starts with D2 only, and stops for my decision before anything is ported.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
