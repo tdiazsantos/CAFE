@@ -328,7 +328,12 @@ cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBA
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes ~/miniforge3/envs/cafe-dev/bin/python test_G1_unsorted_phot.py /Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes out/G1_goals_after
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/realfit_phot5_goalsfix && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes ~/miniforge3/envs/cafe-dev/bin/python ../../realfit_phot5.py /Users/tanio/pywork/cafe_work/cmp/GOALS-photometry-fixes
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/realfit_phot5_dev_fixed && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../realfit_phot5.py /Users/tanio/Sync/pywork/CAFE
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/weighting/W2246_C && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../weighting_W2246.py /Users/tanio/Sync/pywork/CAFE C
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/weighting/W2246_B && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../weighting_W2246.py /Users/tanio/Sync/pywork/CAFE B
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python floor_rule.py out/weighting/W2246_C/summary.npz
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/weighting/W2246_Cfloor && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../weighting_W2246.py /Users/tanio/Sync/pywork/CAFE Cfloor 0.056
 ```
+- **Weighting test (2026-11-15):** `weighting_W2246.py` replaces only the χ² that `cafe_grinder` hands to lmfit (variants C, B, Cfloor). The W2246 tables reach `dev`'s code through `tests/M3/cafe_dir_W2246/` (symlinks to `dev`'s tables plus the five W2246 tables from the pre-sync folder), passed as `cafe_dir`.
 - **Fixture:** made 2026-11-14 with code `21e0cbf`, which equals GOALS `master` `ca10c84`. It is the NGC7469 tutorial spectrum fitted with `inpars_jwst_miri_AGN.ini` and `default_opt.cafe` (z = 0.0163), in 42.5 s.
 - **How the product tests use it:** they run the real `fit_spec` with only `cafe_grinder` replaced by the fixture's parameters (`tests/M3/common.py`), so all products are written by the code under test.
 - **Test 1b:** uses a copy of the M1 CRETA cube with DQ = 1 on 10 channels of the centre spaxel. The original cube has no flagged channels.
@@ -597,6 +602,17 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 
 - Which real cube is the M4 benchmark (cube-fit performance).
 - A separate physics decision, for later (noted 2026-11-14 with D2): add a systematic error floor to the spectral uncertainties? In the tutorial fit (the M3 fixture), the median quoted error is 0.028% of the flux, while the model misses the data by 1.2% (median), so χ²/N ≈ 21,000. With errors like these, the spectrum outweighs everything else in the fit, photometry included.
+- 2026-11-15: **Photometry weighting scheme: tested on real data (my request); my decision pending.** No code change on `dev`; variants run from the work folder.
+  - Case: W2246 (unresolved), as in my notebook `myCAFE_1D+photo_CYGNUS.ipynb`: MRS spectrum `W2246_SingleExt_r0.5as.fits` (z = 4.6, 11,197 channels, 0.88–5.1 µm rest, median SNR 57), 13 photometric points (1.5–882 µm observed, median SNR 12), `inpars_jwst_miri+phot_W2246.ini` with its five W2246 tables, `photometry_opt.cafe`.
+  - NGC7469 left out: no matching-aperture photometry. The GOALS table on Gluon and my notebook's `NGC7469.txt` are galaxy-integrated; the notebook scales the 1.2″ spectrum by 1.7 to meet them.
+  - (a) option C (`dev`): spectral χ²/N 23.6; photometry 13% of the minimised χ².
+  - (b) formula B: 24.2; photometry 76% (SNR factor (57.2/12.3)² = 21.5).
+  - (c) option C + 5.6% floor in quadrature (in the χ² only): 24.4 with the quoted errors, 3.4 with the floored ones; photometry 51%.
+  - The fit is nearly the same in all three: each point's residual changes by at most 0.1σ (IRAC 3.6 µm +5.8σ, 4.5 µm −3.7σ, WISE 22 µm +2.7σ, 882 µm −2.1σ, the other nine within 0.9σ), and only 14 parameters vary. So W2246 cannot tell the schemes apart.
+  - Floor rule: "χ²/N = 1 from the residuals of a fit without a floor" gives 27% on W2246. It is driven by the low-SNR blue end (0.9–1.5 µm rest: χ²/N 4–9, errors too small by 2–3×) and the 3.3 µm feature (15–23% misfit), not by a fractional systematic. Not usable as a general rule.
+  - Proposed rule instead: the instrument's documented calibration uncertainty, added in quadrature, as the photometric errors include calibration (MRS: 5.6 ± 0.7%, Argyriou et al. 2023, A&A 675, A111; Law et al. 2025, AJ 169, 67, refine the calibration without one headline number).
+  - Open with it: a calibration error is mostly a common scale, which a per-channel floor only approximates; and whether `check_fit_pars` (which zeroes features below 0.5σ) should see the floored errors.
+  - Seen in passing: inside the spectrum, WISE 22 µm is 1.4× the model fitted to the spectrum, while WISE 12 µm agrees to 0.4%.
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
