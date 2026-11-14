@@ -522,6 +522,10 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - `calc_phot_weights` keeps only the interval term R₀·Δλ/λ, without the factor (median SNR_spec / median SNR_phot)². So each photometric point keeps its own uncertainty.
   - Before: GOALS weighted photometry by plain 1/σ²; my local formula had the SNR factor.
   - Then port group 2, each change shown hunk by hunk with its reason (standing rule).
+- 2026-11-14: **Standing rule: the simplest form when bringing in my local changes** (CLAUDE.md §8).
+  - Faithfulness to my old code is not a goal. Write each change in the simplest form that gives the same result (personal rule on simplicity).
+  - If my old code can be replaced by something shorter, or by an existing NumPy, astropy or lmfit function, do that, and say so in the change's paragraph.
+  - Applied first to group 2 commit 4: `calc_phot_weights` (47 lines) became five lines with `np.gradient` in `cafe_grinder`.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;

@@ -70,3 +70,7 @@
 ## 7. Decisions and biases
 - Biases, decisions and defaults awaiting my OK go into `PROJECT_BRIEF.md` → "Decisions & biases", dated (personal rule). Record a decision there only after I have approved it.
 - If something is unclear or ambiguous, ask before acting (personal rule).
+
+## 8. Bringing in my local changes (decided 2026-11-14)
+- Faithfulness to my old code is not a goal. Write each change in the simplest form that gives the same result (personal rule on simplicity).
+- If my old code can be replaced by something shorter, or by an existing NumPy, astropy or lmfit function, do that, and say so in the change's paragraph (review rule, §2).
