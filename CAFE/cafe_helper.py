@@ -1146,7 +1146,7 @@ class CAFE_cube_generator:
         self.weight = 1./self.flux_unc**2
         self.spec = Spectrum1D(spectral_axis=self.wave*u.micron, flux=self.flux*u.Jy, uncertainty=StdDevUncertainty(self.flux_unc), redshift=self.z)
 
-        prof_gen = CAFE_prof_generator(self.spec, inparfile, optfile, None, cafe_path=self.cafe_dir)
+        prof_gen = CAFE_prof_generator(self.spec, inparfile, optfile, self.cube.phot_dict, cafe_path=self.cafe_dir)
         self.cont_profs = prof_gen.make_cont_profs()
         waveMod = self.cont_profs['waveMod']
 
