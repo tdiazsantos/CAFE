@@ -133,7 +133,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - No Claude co-authorship anywhere in M2: commits, PR title and PR description (CLAUDE.md §2).
 - After I merge, sync my fork's `master` with GOALS again, and ask before pushing.
 
-### M3 — My local changes
+### M3 — My local changes *(approved 2026-11-14; plan in `reports/M3_plan_2026-11-14.md`, waiting for my review)*
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
@@ -458,6 +458,10 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - *`dev` `72c3481`→`1252ecb` (12 commits, `PROJECT_BRIEF.md` only, no trailers);*
     - *the clean worktree `cmp/GOALS-physics-fixes` removed, the local branch deleted with `git branch -d`, and the stale ref removed. No other stale refs are left.*
     - ***M2 is done.** #11 waits for M3, and M3 waits for my approval.)*
+- 2026-11-14: **M3 approved.**
+  - First step: merge `master` (= GOALS `master` `ca10c84`) into `dev`, with no rebase and no force push, so M3 starts from the fixed version. Done: merge commit `c2915e9` (parents `35f0cd8` + `ca10c84`). The code on `dev` now equals GOALS `master`; only the project files differ.
+  - **Co-authorship:** commit attribution on, PR attribution off, in `.claude/settings.local.json` (`commit` on, `pr` empty). It applies to commits that stay on my fork. Anything for GOALS follows the GOALS rule: no Claude trailer and no attribution, with fresh commits from `upstream/master`. Attribution was turned on after the commit that records this.
+  - Then a plan only: my local changes from `local-wip-2026-11`, the local-only bugs and #11 (together with `norm_factor`), grouped, in the order I'd bring them into `dev`, each with what it does and a simple test. Done: `reports/M3_plan_2026-11-14.md`. Its open decisions are under "Awaiting my OK". Waiting for my review.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -465,7 +469,15 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - logs in `tests/m2/logs`, and the empty output folder `tests/m2/out/t1_grid_before`.
 
 ### Awaiting my OK
-- How attribution is turned on once I approve M3. `.claude/settings.local.json` applies to every commit and PR made from this folder, so a commit trailer would also land on commits for GOALS branches, and PR attribution on PRs to GOALS.
+- M3 decisions, from `reports/M3_plan_2026-11-14.md` (2026-11-14):
+  - D1: one NGC7469 tutorial 1D fit as a shared fixture for the product tests.
+  - D2: the photometry weighting formula in `calc_phot_weights`.
+  - D3a–e: flux normalisation and #11: a relative lower-bound test in `check_fit_pars`; what `scale_flux_params` scales (line and PAH `_Peak` value, stderr and bounds; not `o_*_Peak` or `_FLX`); a parcube fully in physical units; products from continuum profiles rebuilt from the unscaled spectrum; whether `norm_factor` is still needed after #11.
+  - D4: the reference-PAH continuum window (±γ_PAH or ±10,000 km/s).
+  - D5: the photometry-only model grid density.
+  - D6: `stitch_to_shortest` at no-overlap gaps.
+  - D7: the contcube extension rename `'fCon'` → `'fCON'`.
+  - D8: the personal input files (inpars, opt, line tables, CRETA parameter files) stay out of `dev`.
 - Which real cube is the M4 benchmark (cube-fit performance).
 
 ### Biases and small issues flagged
