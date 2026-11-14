@@ -21,6 +21,10 @@
   - Nothing you wrote, ported, edited or reformatted reaches GOALS until I have reviewed and approved it **line by line**. Before any PR to GOALS, show me the full diff against `upstream/master`, hunk by hunk, and wait for my approval of each hunk. If anything changes after my approval, show me the changed lines again.
   - Only after that, ask explicitly: "Open PR <branch> → GOALS-survey/CAFE?" and wait for a clear yes.
   - Branches meant for GOALS start from `upstream/master` and never contain the project files (`CLAUDE.md`, `PROJECT_BRIEF.md`, `DESIGN.md`, environment files).
+- **No more pushes or PRs to GOALS** (decided 2026-11-14).
+  - Fixes to GOALS bugs go only into `dev` on my fork.
+  - My fork's `master` stays equal to GOALS `master`.
+  - The protections above stay in force.
 - **Authorship until M1 is complete.** Every commit, tag, branch and PR text, up to and including the M1 freeze, is mine alone. That means:
   - my git identity;
   - no `Co-Authored-By` trailer, no "Generated with Claude Code" line, no session links.

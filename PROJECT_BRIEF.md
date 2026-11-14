@@ -183,7 +183,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - Docs.
 
 ### GOALS bugs found after M2 (logged 2026-11-14)
-Each is in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers are for `dev`. A fix goes on a branch from `upstream/master`, only with my approval and after my line-by-line review (CLAUDE.md §2).
+Each was found in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers are for `dev` before the fixes. Since 2026-11-14, fixes go only into `dev`, with my approval (CLAUDE.md §2).
 - **G1: the photometry file's line order changes the model grid.** `read_phot` (`cafe.py:644`) keeps the file order, and `CAFE_prof_generator` (`cafe_helper.py:805`, `:813`) extends the model grid from `phot_dict['wave'][0]` for the bluest band and `[-1]` for the reddest.
   - Failing case: `tests/M3/test_G1_unsorted_phot.py` (work folder), with the same 3 points in ascending and in descending order (stubbed fit).
     - Ascending: the grid runs from 1.5 to 231 µm.
@@ -574,6 +574,9 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - G1: `read_phot` sorts the photometry by wavelength.
   - Then, on that branch, rerun the photometry fit with `photometry_opt.cafe` (`DoFilter = True`) to confirm it works. Show me the diff hunk by hunk with the reason paragraphs.
   - G2 stays for the dead-code clean-up.
+- 2026-11-14: **Both hunks of the G3/G1 round approved, then a change of plan: no more pushes or PRs to GOALS** (CLAUDE.md §2).
+  - From now on, fixes to GOALS bugs go only into `dev` on my fork. My fork's `master` stays equal to GOALS `master`.
+  - Applied at once: cherry-pick `f44f96e` and `c0bd2c6` onto `dev`, delete the local branch `GOALS-photometry-fixes-2026-11` (never pushed), and rerun the photometry fit with `photometry_opt.cafe` on `dev`. Then wait before group 3.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
