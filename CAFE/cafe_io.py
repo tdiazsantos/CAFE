@@ -1120,7 +1120,7 @@ class cafe_io:
             "cafefit": {
                 "obsspec": obsspec,
                 "fitPars": fitPars.valuesdict(),
-                "fitParsErr": {p: fitPars[p].stderr for p in fitPars},
+                "fitParsErr": {par: fitPars[par].stderr for par in fitPars},
                 "cont_profs": cafe.cont_profs,
                 "CompFluxes": CompFluxes,
                 "CompFluxes_0": CompFluxes_0,
