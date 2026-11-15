@@ -27,6 +27,14 @@ cafeio = cafe_io()
 
 #import ipdb
 
+def scale_peaks(params, factor):
+    """Multiply the line and PAH peaks, the only parameters in Jy, by factor (value, bounds and stderr)"""
+    for par in params.values():
+        if par.name[0] in 'gd' and par.name.endswith('_Peak'):
+            par.min, par.max, par.value = par.min * factor, par.max * factor, par.value * factor
+            if par.stderr is not None:
+                par.stderr *= factor
+
 def cafe_grinder(self, params, spec, phot):
     """
     params [lmfit.parameter() object]: parameters of the model
@@ -37,6 +45,12 @@ def cafe_grinder(self, params, spec, phot):
     ### Read in global fit settings
     ftol = self.inopts['FIT OPTIONS']['FTOL']
     nproc = self.inopts['FIT OPTIONS']['NPROC']
+    # The fit runs on the data divided by the spectrum's median |flux|, with the line and PAH peaks and the continuum reference
+    # fluxes scaled to match, so that it does not depend on the source's flux level. Peaks and reference fluxes are scaled back after it
+    norm = np.nanmedian(np.abs(spec['flux']))
+    spec = dict(spec, flux=spec['flux'] / norm, flux_unc=spec['flux_unc'] / norm)
+    scale_peaks(params, 1 / norm)
+    self.cont_profs['flux0'] = {k: v / norm for k, v in self.cont_profs['flux0'].items()}
     # Spectral uncertainties in the fit's chi^2: the quoted ones plus a floor, a fraction SPEC_UNC_FLOOR of the observed flux,
     # in quadrature (0.01 for opt files without the option). check_fit_pars and the products keep the quoted ones
     floor = self.inopts['FIT OPTIONS'].get('SPEC_UNC_FLOOR', 0.01)
@@ -56,6 +70,7 @@ def cafe_grinder(self, params, spec, phot):
         s = np.argsort(wave)
         dl = np.gradient(wave[s])[np.argsort(s)]
         phot['weight'] = R_0 * dl[spec['wave'].size:] / phot['wave']
+        phot = dict(phot, flux=phot['flux'] / norm, flux_unc=phot['flux_unc'] / norm)
     
     while acceptFit is False:
         
@@ -113,6 +128,8 @@ def cafe_grinder(self, params, spec, phot):
                     print('Hit maximum number of refitting loops. The fitting was unsuccessful. Continuing to next spaxel (if any left)')
                 acceptFit = True
 
+    scale_peaks(result.params, norm)
+    self.cont_profs['flux0'] = {k: v * norm for k, v in self.cont_profs['flux0'].items()}
 
     return result
 
