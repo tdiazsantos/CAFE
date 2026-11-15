@@ -1,6 +1,6 @@
 # CAFE — design notes
 
-This describes my fork's **`dev`** branch: GOALS-survey/CAFE `master` plus the M3 changes (2026-11-14 to 2026-11-15, up to `1e66caf`; listed at the end). The parts outside M3 come from a first read of GOALS `master` @ `39e298b`, not a full review. Keep it current as the code changes.
+This describes my fork's **`dev`** branch: GOALS-survey/CAFE `master` plus the M3 changes (2026-11-14 to 2026-11-15, up to `8177bb6`; listed at the end). The parts outside M3 come from a first read of GOALS `master` @ `39e298b`, not a full review. Keep it current as the code changes.
 
 ## What the code does
 CAFE (Continuum And Feature Extraction) decomposes infrared spectra into physical components by least-squares fitting with lmfit. The inputs are JWST NIRSpec and MIRI or Spitzer IRS spectra, optionally with photometry. The components are:
@@ -134,7 +134,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
    - `_cafefit.asdf` stores each parameter's stderr as `fitParsErr`, next to `fitPars` (M3).
    - The fit figure's y-range includes the photometry (M3).
 
-## Cube flow (`cubemod`), the M2 target
+## Cube flow (`cubemod`), the M4 target
 1. **`read_cube`**
    - Reads a CRETA cube (`cafe_io.read_cretacube`). Wavelengths must be in µm.
    - Trims overlaps and moves to the rest frame, as in 1D.
@@ -160,9 +160,11 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
    - `least_squares` estimates the Jacobian numerically, so the cost is about (npar+1) evaluations of `get_model_fluxes` per iteration, times the number of refit loops.
 
 ## CRETA extraction and stitching
+Both extractions read their parameters from the parameter file (`single_params.txt`, `grid_params.txt` or the user's copy). `parameter_file=False` raises a `ValueError` (M3, G5).
 1. Each band (sub-band cube) is measured slice by slice with photutils `aperture_photometry`, given the cube's celestial (2-D) WCS (M3 for the grid, G4).
    - The single extraction uses one aperture.
    - The grid extraction uses a grid of square spaxels; it takes each grid point's pixel centre from the aperture's `positions` (M3, G8).
+   - Aperture correction in the grid: the PSF cubes are matched to `cubes` and loaded in the same order as the data (M3, G6), and measured with the data's aperture, `r_ap` (M3, G9). This path is untested end to end: CRETA's PSF cubes are not available, and it stops at G11 (see the brief).
 2. **Stitching** works per aperture or grid point, over the bands in the order of `cubes` in the parameter file.
    - `calculateStitchRatios` gives, for each pair of adjacent bands, r = median(next band) / median(this band) over their overlap. It is 1.0 when they do not overlap or the overlap has no valid data.
    - `stitchSpectrum` (M3) multiplies band i by prod(r[i:]) / prod(r[ref:]), so every band lands on the flux level of the reference band `ref`. A gap is chained through with its ratio of 1.0.
@@ -203,3 +205,6 @@ My local changes brought in, and the GOALS bugs fixed on `dev` along the way (G 
 - `5c7085a`, `56b4c75` (G4): CRETA's grid and PSF-grid photometry pass the celestial WCS.
 - `d41e6b1` (G7): `pyplot.get_cmap` for the grid plot colours.
 - `1e66caf` (G8): the grid aperture centres come from the aperture.
+- `82539c1` (G6): the grid keeps the PSF cubes out of its data file list and loads them in the order of `cubes`.
+- `744dc2a` (G9): the grid measures the PSF cubes with the data's aperture, `r_ap`.
+- `8177bb6` (G5): `parameter_file=False` raises a `ValueError`; the keyword-only path is removed.
