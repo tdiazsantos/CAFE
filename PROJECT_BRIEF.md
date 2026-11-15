@@ -180,7 +180,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
     - ch2-medium left out (a gap): the default changes only the bands before the gap, by one common factor (0.748, the chain from ch2-long to ch4-long). The bands from ch2-long on are bit-identical.
     - A name not in `cubes` stops the extraction with `ValueError: 'ch2-mediun' is not in list`.
   - The grid extraction runs only in `cafe-legacy`: in `cafe-dev` it fails before reaching the stitching (G4). The single extraction ran in `cafe-dev`. Smoke test: 0 failed.
-  - Waiting for my approval. Not pushed.
+  - Approved 2026-11-15. Next: fix G4 on `dev`; G5 and G6 stay logged for later (my decision, 2026-11-15).
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
