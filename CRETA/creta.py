@@ -115,8 +115,8 @@ class creta:
             centering = params['centering'] == 'True'
             l_c =  float(params['lambda_cent'].split("#")[0])
             background =  params['background_sub'] == 'True'
-            r_in = float(params['r_ann_in'].split("#")[0])
-            width = float(params['ann_width'].split("#")[0])
+            bkg_ann_r_in = float(params['r_ann_in'].split("#")[0])
+            bkg_ann_width = float(params['ann_width'].split("#")[0])
             
             # Read the list of cubes in data
             files = os.listdir(data_path)
@@ -194,7 +194,7 @@ class creta:
         print('Centering lambda: '+str(l_c)+'μm')
         print('Background Subtraction: '+str(background))
         if background:
-            print('Background Inner Radious, Annulus Width: '+str(r_in)+','+str(width)+' (arcsec,arcsec)')
+            print('Background Inner Radious, Annulus Width: '+str(bkg_ann_r_in)+','+str(bkg_ann_width)+' (arcsec,arcsec)')
         print('PSF sub-cubes Path: '+PSFs_path)
         print('Data sub-cubes Path: '+data_path)
         print('########################################')
@@ -214,13 +214,13 @@ class creta:
         #%% Load Data
         print('Loading Data')    
         ## getSubCubes is in userAPI.py file
-        realData_all = user.getSubCubes(data_path, files_sort, user_rs_arcsec, lambda_ap, point_source, isnotPSF, centering, background, r_in, width, aperture_type, False, ignore_DQ)
+        realData_all = user.getSubCubes(data_path, files_sort, user_rs_arcsec, lambda_ap, point_source, isnotPSF, centering, background, bkg_ann_r_in, bkg_ann_width, aperture_type, False, ignore_DQ)
         timePSF_loading = time.time()
 
         #%% Load PSFs: PSF_all is a list with all PSF sub-cubes sorted by wavelength
         if aperture_correction or convolve:
             print('Loading PSFs')
-            PSF_all = user.getSubCubes(PSFs_path, PSF_files_sort, user_rs_arcsec, lambda_ap, point_source, isPSF, centering, background, r_in, width, aperture_type, convolve, ignore_DQ)
+            PSF_all = user.getSubCubes(PSFs_path, PSF_files_sort, user_rs_arcsec, lambda_ap, point_source, isPSF, centering, background, bkg_ann_r_in, bkg_ann_width, aperture_type, convolve, ignore_DQ)
             print("PSF Cubes loaded in': %s seconds" % (time.time() - timePSF_loading))
         
         if convolve:
@@ -279,7 +279,7 @@ class creta:
         if aperture_correction:
             for i in range(len(PSF_all)):
                 if background:
-                    PSF_all[i].doBackgroundSubtraction(point_source, r_in, width)  ## Background Subtraction if needed
+                    PSF_all[i].doBackgroundSubtraction(point_source, bkg_ann_r_in, bkg_ann_width)  ## Background Subtraction if needed
 
                 PSF_all[i].doSinglePhotometry(isPSF, background) 
                 #PSF_all[i].doFluxUnitConversion()
@@ -290,7 +290,7 @@ class creta:
         time_data_photometry_all = time.time() 
         for i in range(len(realData_all)):
             if background:
-                realData_all[i].doBackgroundSubtraction(point_source, r_in, width)   ## Background Subtraction if needed
+                realData_all[i].doBackgroundSubtraction(point_source, bkg_ann_r_in, bkg_ann_width)   ## Background Subtraction if needed
             # Photometry
             realData_all[i].doSinglePhotometry(isnotPSF, background)
             # realData_all[i].doAreaCalculations() #calculate the area 
@@ -350,7 +350,7 @@ class creta:
             
             meta_dict = {'extraction_RA':ra_cent, 'extraction_DEC':dec_cent, "r_ap":aper_rs[j], "exrtaction_type":aper_type,
                          "ap_corr":aperture_correction, "Centering":centering, 'Centering_lambda':l_c,
-                         "bkg_sub":background, "bkg_r_in":r_in, "bkg_an_w":width
+                         "bkg_sub":background, "bkg_r_in":bkg_ann_r_in, "bkg_an_w":bkg_ann_width
             }
             
             #print("For radius", str(aper_rs[j]), "arcsec:")
