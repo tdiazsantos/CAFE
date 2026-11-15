@@ -1047,13 +1047,13 @@ class cube_preproc:
     ########### --> Return [df_res,realData_all,spec1ds]   ############################
     # @stitched_spectrum: The spectrum 1D element. (Spectrum1D)           
     ###############################################################################    
-    def stitchSpectrum(self, ratio_list, idx, spectrum, ref):
+    def stitchSpectrum(self, ratio_list, idx, spectrum, stitch_ref_idx):
 
         # Chain the band-to-band ratios through all bands (a ratio not measured, at a gap, is 1.) and divide by the
-        # reference band's chain, so that band idx lands on the flux level of band ref
-        ratio = np.prod(ratio_list[idx:]) / np.prod(ratio_list[ref:])
+        # reference band's chain, so that band idx lands on the flux level of band stitch_ref_idx
+        band_to_ref_multiplier = np.prod(ratio_list[idx:]) / np.prod(ratio_list[stitch_ref_idx:])
 
-        return np.array(spectrum) * ratio
+        return np.array(spectrum) * band_to_ref_multiplier
 
 
         #if np.isnan(ratio_list[idx]): #if there is no spectrum there
