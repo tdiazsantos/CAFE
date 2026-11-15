@@ -26,6 +26,9 @@ tabpath  = ''
 #  used in the fit). In most cases, they do not need to be changed.
 # Required relative lmfit accuracy for fit
 ftol  = 1e-5       		
+# Error floor on the spectrum, as a fraction of the observed flux, added in quadrature to
+# the quoted uncertainties in the fit's chi^2 only (0 for none)
+SPEC_UNC_FLOOR = 0.01
 # Number of processes to use if parallel. No effect on 1D fitting
 NPROC   = 4				
 # Replace dust temperature interpolation with nearest

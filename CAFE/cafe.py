@@ -37,6 +37,10 @@ def cafe_grinder(self, params, spec, phot):
     ### Read in global fit settings
     ftol = self.inopts['FIT OPTIONS']['FTOL']
     nproc = self.inopts['FIT OPTIONS']['NPROC']
+    # Spectral uncertainties in the fit's chi^2: the quoted ones plus a floor, a fraction SPEC_UNC_FLOOR of the observed flux,
+    # in quadrature (0.01 for opt files without the option). check_fit_pars and the products keep the quoted ones
+    floor = self.inopts['FIT OPTIONS'].get('SPEC_UNC_FLOOR', 0.01)
+    spec_fit = dict(spec, flux_unc=np.sqrt(spec['flux_unc']**2 + (floor * spec['flux'])**2))
     
     acceptFit = False
     ### Limit the number of times the fit can be rerun to avoid infinite loop
@@ -63,7 +67,7 @@ def cafe_grinder(self, params, spec, phot):
         ### Note that which fitting method is faster here is pretty uncertain, changes by target
         #method = 'leastsq'
         method = 'least_squares' #'nelder' if len(spec['wave']) >= 10000 else 'least_squares'
-        fitter = lm.Minimizer(chisquare, params, nan_policy='omit', fcn_args=(spec, phot, self.cont_profs, show))
+        fitter = lm.Minimizer(chisquare, params, nan_policy='omit', fcn_args=(spec_fit, phot, self.cont_profs, show))
         
         result = fitter.minimize(method=method, ftol=ftol, max_nfev=200*(len(params)+1))
 
