@@ -181,7 +181,10 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
     - A name not in `cubes` stops the extraction with `ValueError: 'ch2-mediun' is not in list`.
   - The grid extraction runs only in `cafe-legacy`: in `cafe-dev` it fails before reaching the stitching (G4). The single extraction ran in `cafe-dev`. Smoke test: 0 failed.
   - Approved 2026-11-15. Next: fix G4 on `dev`; G5 and G6 stay logged for later (my decision, 2026-11-15).
-- **G4 fixed on `dev`** (my request, 2026-11-15): commit `5c7085a`; tests and the two further grid failures it uncovered (G7, G8) under "GOALS bugs found after M2". Waiting for my approval. Not pushed.
+- **G4 fixed on `dev`** (my request, 2026-11-15): commit `5c7085a`; tests and the two further grid failures it uncovered (G7, G8) under "GOALS bugs found after M2". Approved 2026-11-15. Not pushed.
+- **`dev` pushed** 2026-11-15 with my OK (`7880a8d`→`beb8cf6`, the 5 commits shown to me).
+- **The M3 list is done, apart from the `DESIGN.md` update** (checked 2026-11-15 against `reports/M3_plan_2026-11-14.md`): groups 1–5 done (1e skipped as planned), D1–D8 decided, and the spectral error floor added.
+- **The grid extraction runs in `cafe-dev`** (my request, 2026-11-15): G7, G8 and the PSF-path half of G4 fixed on `dev`, 3 commits `56b4c75`, `d41e6b1`, `1e66caf` (with the co-author trailer); details and tests under "GOALS bugs found after M2". Waiting for my approval. Not pushed.
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
@@ -208,7 +211,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - Tests and CI.
 - Packaging: pyproject-only, correct dependencies.
 - Logging instead of `print`.
-- Removing dead and commented-out code.
+- Removing dead and commented-out code. Includes `sliceGridExtractionPhotometry` in `CRETA/cube_handler.py` (not called; it still passes the cube's 3-D WCS to `aperture_photometry`, G4).
 - Spitzer IRS and MIRI LRS support.
 - Docs.
 - Idea, logged 2026-11-15 (not tested, by my decision): one free spectrum-to-photometry scale factor, with a prior of the instrument's calibration uncertainty (MRS 5.6%). It would remove the calibration offset that a spectral error floor leaves in everything the spectrum pins down. It goes together with a floor: on its own, in the synthetic test, it stayed at its prior (s = 1.007 ± 0.044, truth 1.05).
@@ -238,11 +241,19 @@ Each was found in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers a
     - `cafe-dev`: with `stitch_band = ch1-short` each spaxel's stitched spectrum and errors are the default ones times one constant (0.58–1.74, spread ≤ 9×10⁻¹⁶), and ch1-short keeps its own flux.
     - Information: `cafe-dev` and `cafe-legacy` outputs differ, because photutils changed (see "Biases", 2026-11-15).
   - Smoke test: 0 failed.
-  - Not changed: the same 3-D WCS goes to `aperture_photometry` in `doPSFGridPhotometry` (`cube_handler.py:222`, the grid's aperture-correction path, where G6 also applies), which would raise the same error in `cafe-dev` when that path runs, and in `sliceGridExtractionPhotometry` (`:355–356`, not called).
+  - Approved 2026-11-15.
+  - The same 3-D WCS went to `aperture_photometry` in `doPSFGridPhotometry` (`cube_handler.py:222`, the grid's aperture-correction path, where G6 also applies). **Fixed on `dev`**, commit `56b4c75` (2026-11-15): it passes `self.wcs.celestial`. Its real path stays untested until G6 is fixed. Test `tests/M3/test_psf_grid_photometry.py` (synthetic, known truth: a uniform cube with a 3-D RA/DEC/WAVE WCS and squares on pixel boundaries, called on a stand-in object): failing case first, in `cafe-dev` the code at `d58797b` raises the `TypeError`; after the fix the sums are the true ones (18, 32, 18) in both envs, and in `cafe-legacy` bit-identical to the code before.
+  - `sliceGridExtractionPhotometry` (`:355–356`, not called) also passes the 3-D WCS: left for the dead-code clean-up (my decision, 2026-11-15).
 - **G5: CRETA with `parameter_file=False` cannot run** (logged 2026-11-15). `sel_cubes` and `files_sort` are set only when a parameter file is read (`creta.py:101–131`, `:777–792`, lines at `087c0a1`), so `singleExtraction` stops with a `NameError` at `params.append(str(sel_cubes))`, and `gridExtraction` when it loads the cubes. Not fixed.
 - **G6: the grid extraction puts the PSF files into the data file list** (logged 2026-11-15). With `aperture_correction` or `convolve`, `gridExtraction` appends the matching PSF files to `files_sort` instead of `PSF_files_sort` (`creta.py:800–802` at `087c0a1`). Found by reading, not run. Not fixed.
-- **G7: the grid extraction calls `plt.cm.get_cmap`** (logged 2026-11-15; `creta.py:1055`), which matplotlib 3.9 removed (`cafe-dev` has 3.11.2; `cafe-legacy`'s 3.8.2 still has it). In `cafe-dev` the grid run stops there with an `AttributeError`, after the photometry. It only picks the colours of the grid plot; `plt.get_cmap('hsv', n)` works in both. This breaks the normal workflow on the current stack. Not fixed.
-- **G8: the grid extraction reads the photometry columns `xcenter`/`ycenter`** (logged 2026-11-15; `creta.py:1092–1093`), which photutils 3.0 renamed `x_center`/`y_center`. photutils 3 still maps the old names on the table, with a deprecation warning, but not on a table row, which is what CRETA indexes. So in `cafe-dev` the grid run stops with `KeyError: 'xcenter'`. The values become the sub-cubes' `.xys`. This breaks the normal workflow on the current stack. Not fixed.
+- **G7: the grid extraction calls `plt.cm.get_cmap`** (logged 2026-11-15; `creta.py:1055`), which matplotlib 3.9 removed (`cafe-dev` has 3.11.2; `cafe-legacy`'s 3.8.2 still has it). In `cafe-dev` the grid run stops there with an `AttributeError`, after the photometry. It only picks the colours of the grid plot; `plt.get_cmap('hsv', n)` works in both. This breaks the normal workflow on the current stack.
+  - **Fixed on `dev`**, commit `d41e6b1` (2026-11-15): `plt.get_cmap('hsv', …)`, the same colours in matplotlib 3.8.2 and 3.11.2, with no deprecation warning in either. Failing case first: the `cafe-dev` grid run on `56b4c75` stops at `creta.py:1055` with the `AttributeError`.
+- **G8: the grid extraction reads the photometry columns `xcenter`/`ycenter`** (logged 2026-11-15; `creta.py:1092–1093`), which photutils 3.0 renamed `x_center`/`y_center`. photutils 3 still maps the old names on the table, with a deprecation warning, but not on a table row, which is what CRETA indexes. So in `cafe-dev` the grid run stops with `KeyError: 'xcenter'`. The values become the sub-cubes' `.xys`. This breaks the normal workflow on the current stack.
+  - **Fixed on `dev`**, commit `1e66caf` (2026-11-15): `xx, yy = all_aps[i][j].positions[grid_point_idx]`, the same values from the aperture itself, with any photutils version (checked: the aperture positions equal the table's centre columns in 1.10.0 and 3.1.1). The grid stores them in `.xys`, which nothing downstream in the grid reads. Failing case first: the `cafe-dev` grid run on `d41e6b1` stops at `creta.py:1092` with `KeyError: 'xcenter'`.
+  - Tests for G7, G8 and the PSF path (real NGC7469 grid, `grid_dev_compare.py`): 18/18 checks pass.
+    - `cafe-dev`, with no test-side stand-ins: the grid extraction runs. Its outputs are bit-identical to the run with the stand-ins (`g4_run_dev.py`), `_cube.fits` too, and the D6 grid checks pass (with `stitch_band = ch1-short` each spaxel is the default × one constant, 0.58–1.74, spread ≤ 9×10⁻¹⁶; ch1-short keeps its own flux).
+    - `cafe-legacy`: the outputs are bit-identical to those at `5c7085a` and at `be4201c`, `_cube.fits` too.
+    - Smoke test: 0 failed.
 - **GOALS round for G3 and G1 (2026-11-14).** Branch `GOALS-photometry-fixes-2026-11` from `upstream/master` (`ca10c84`), in the worktree `cmp/GOALS-photometry-fixes` (work folder). 2 commits, mine, no co-author trailer; 2 files, +3/−2, 2 hunks:
   - `f44f96e` G3: `synphot` puts the f_λ conversion into its own array (`flux_lam`). Rebinding `flux` instead would leave the input unchanged but still compound inside the loop (checked).
   - `c0bd2c6` G1: `read_phot` sorts the table by wavelength.
@@ -405,6 +416,9 @@ cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBA
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python g4_run_dev.py /Users/tanio/Sync/pywork/CAFE grid grid_all.txt g4_after_dev_grid_all   # likewise grid_all_ch1s; test-side stand-ins for G7 and G8
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-legacy/bin/python stitch_run.py /Users/tanio/Sync/pywork/CAFE grid grid_all.txt g4_after_legacy_grid_all   # likewise grid_all_ch1s, and single single_all.txt g4_legacy_single_all
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python g4_compare.py
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_psf_grid_photometry.py /Users/tanio/Sync/pywork/CAFE d58797b   # likewise in cafe-legacy
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python stitch_run.py /Users/tanio/Sync/pywork/CAFE grid grid_all.txt g8_after_dev_grid_all   # likewise grid_all_ch1s, and both in cafe-legacy (g8_after_legacy_*); no stand-ins
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python grid_dev_compare.py
 ```
 - **Weighting test (2026-11-15):** `weighting_W2246.py` replaces only the χ² that `cafe_grinder` hands to lmfit (variants C, B, Cfloor). The W2246 tables reach `dev`'s code through `tests/M3/cafe_dir_W2246/` (symlinks to `dev`'s tables plus the five W2246 tables from the pre-sync folder), passed as `cafe_dir`.
 - **Fixture:** made 2026-11-14 with code `21e0cbf`, which equals GOALS `master` `ca10c84`. It is the NGC7469 tutorial spectrum fitted with `inpars_jwst_miri_AGN.ini` and `default_opt.cafe` (z = 0.0163), in 42.5 s.
@@ -685,6 +699,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - The grid extraction gets the option too if it uses the same stitching code.
   - First show me how the user specifies the band (names, where it is set), then the diff hunk by hunk with its reason paragraph and the test, and wait for my approval.
 - 2026-11-15: **Commit `be4201c` (the reference band for stitching) approved.** Push `dev`, showing me first what it publishes. Then fix G4 on `dev`: pass `w.celestial` in `doGridPhotometry`, as the single extraction does; show the failing case first, then the diff hunk by hunk with its reason paragraph, and rerun the real NGC7469 grid test in `cafe-dev`. G5 and G6 stay logged for later.
+- 2026-11-15: **`dev` pushed** (`7880a8d`→`beb8cf6`, the 5 approved commits). **Commit `5c7085a` (G4) approved.** The photutils-version finding is logged as it is (see "Biases"). After confirming that the M3 list is done apart from the `DESIGN.md` update, fix the new grid problems: G7, G8, and `w.celestial` in `doPSFGridPhotometry` (its path stays untested until G6); leave `sliceGridExtractionPhotometry` for the dead-code clean-up. Show the failing cases, then the diff hunk by hunk with reason paragraphs, and rerun the real NGC7469 grid extraction in `cafe-dev` without the test-side stand-ins. Update `DESIGN.md` last, then stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
