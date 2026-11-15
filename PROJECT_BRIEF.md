@@ -5,7 +5,7 @@ Owner: Tanio Díaz-Santos. Started 2026-11-04.
 ## Goal
 1. Bring my three CAFE versions (GOALS upstream, my fork, my local folder) into one checked, synchronised state, with **minimal** code changes and nothing reaching GOALS that I haven't approved line by line.
 2. Freeze the old setup as legacy and continue in a clean workspace.
-3. Develop CAFE further, starting with the speed of cube fitting.
+3. Develop CAFE further: spectrum fits first, then fits with photometry, then the speed of cube fitting, then clean-up and packaging (M4–M7).
 
 ## Repositories and folders
 - **GOALS upstream:** https://github.com/GOALS-survey/CAFE. `master` @ `39e298b` (2026-06-08) at the start; `7299306` since 2026-11-06 (PR #99); `3147e2a` since 2026-11-06 (PR #100); `788be50` since 2026-11-06 (PR #101); `ca10c84` since 2026-11-06 (PR #102). Remote name `upstream`.
@@ -205,16 +205,26 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - **M3 complete** (my decision, 2026-11-15). Everything in `reports/M3_plan_2026-11-14.md` is done or decided, `DESIGN.md` covers the M3 changes, and every M3 commit is approved. `dev` pushed to my fork with my OK (`1926c7b`→`6b9136c`, 10 commits). Carried over, not part of M3:
   - the "CRETA aperture-correction path" item (G10, G11 and its two related problems), to be fixed and tested end to end once CRETA's PSF cubes are found;
   - G13 (`save_asdf`'s undefined `self`);
-  - the clean-up list under "Later" (dead and commented-out code, generic names, keywords the parameter file overrides, the line table's row order);
-  - M4 starts only after my approval (CLAUDE.md §1), in the order recorded under M4.
+  - the clean-up list, now M7 (dead and commented-out code, generic names, keywords the parameter file overrides, the line table's row order);
+  - M4 to M7 (split 2026-11-15) each start only after my approval (CLAUDE.md §1).
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
 - The changes and the findings on each are in the M1 report. The 8 items merged in GOALS PR #99 are already in.
 - Claude co-authorship applies from here, only on commits that stay on my fork. `.claude/settings.local.json`: commit attribution on and PR attribution off since 2026-11-14 (CLAUDE.md §2).
 
-### M4 — Cube-fit performance
-- **Order (my decision, 2026-11-15):** (1) check that fitting a JWST spectrum alone works well, including the non-unique convergence; (2) then fits with real photometry; (3) then cube-fit performance (below).
+Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milestone starts only after my approval** (CLAUDE.md §1). The CRETA aperture-correction path stays a separate item until the PSF cubes are found.
+
+### M4 — Fitting a JWST spectrum alone
+- Check that fitting a JWST spectrum alone works well, including the non-unique convergence.
+- **Important finding (logged 2026-11-15): the fit does not converge to a unique minimum.** In the tutorial fit (`476c6ef`), inputs that differ only by rounding (2×10⁻¹⁶) move STB_FLX by 3.7×, COO_TMP by 13% and the line/PAH peaks by ~5% (median), while a repeat is bit-identical (see "Biases", 2026-11-15).
+  - Fit settings (`FTOL`, `MAX_LOOPS`, `FIT_CHK`, `max_nfev`, method) stay my decision (CLAUDE.md §4).
+
+### M5 — Fits with real photometry
+- Fits of a JWST spectrum together with real photometry. The fake-photometry setup is for functional checks only (CLAUDE.md §10).
+
+### M6 — Cube-fit performance and parallelisation
+- Includes the fitting order (#6): the image for the fitting sequence is, for now, the `nansum` over all channels (M2, temporary); a proper SNR image is still to come (see also "Biases", 2026-11-04). Includes `NPROC` (#15).
 - **Baseline:** time `cubemod.fit_cube` on a real cube (I choose which) and on a synthetic cube with known truth. Profile where the time goes:
   - per-spaxel parameter and profile regeneration;
   - table reading;
@@ -226,16 +236,20 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
   - use `NPROC` to parallelise spaxels while keeping the neighbour-initialisation order from `get_fit_sequence`;
   - make `get_model_fluxes` cheaper.
 - **Acceptance:** results identical to the baseline within approved tolerances, plus a measured speed-up. A speed-up that changes results is a physics decision for me (CLAUDE.md §4).
-- **Important finding for M4 (logged 2026-11-15): the fit does not converge to a unique minimum.** In the tutorial fit (`476c6ef`), inputs that differ only by rounding (2×10⁻¹⁶) move STB_FLX by 3.7×, COO_TMP by 13% and the line/PAH peaks by ~5% (median), while a repeat is bit-identical (see "Biases", 2026-11-15).
-  - So any speed-up that changes the floating-point order (caching, parallel spaxels, a cheaper `get_model_fluxes`) will move results by this much. The baseline comparison and its tolerances must allow for this spread.
-  - Fit settings (`FTOL`, `MAX_LOOPS`, `FIT_CHK`, `max_nfev`, method) stay my decision (CLAUDE.md §4).
+- The non-unique convergence (M4) sets the spread: any speed-up that changes the floating-point order (caching, parallel spaxels, a cheaper `get_model_fluxes`) will move results by this much. The baseline comparison and its tolerances must allow for this spread.
+
+### M7 — Clean-up and packaging
+- Packaging: pyproject-only, correct dependencies.
+- Logging instead of `print`.
+- Generic variable names elsewhere in CAFE and CRETA (naming rule, CLAUDE.md §9, 2026-11-15): rename them to names that identify what they hold. Includes the older names on lines M3 rewrote: `tab` in `read_phot`, `cmap` in `gridExtraction`, `aper` in `doPSFGridPhotometry`, `stitchSpectrum`'s `idx`, `ratio_list` and `spectrum`, and the parameters `r_in`, `width` of `getSubCubes` and `doBackgroundSubtraction`.
+- Removing dead and commented-out code. Includes `sliceGridExtractionPhotometry` in `CRETA/cube_handler.py` (not called; it still passes the cube's 3-D WCS to `aperture_photometry`, G4).
+- The other items logged for the clean-up in this brief (e.g. keywords the parameter file overrides, the README's keyword tables, the line table's row order, G13).
+
+### CRETA aperture-correction path (separate item, not a milestone)
+- G10, G11 and G11's two related problems (see "GOALS bugs found after M2"): fixed and tested end to end together once CRETA's PSF cubes are found, not with stand-in PSFs.
 
 ### Later (do not start)
 - Tests and CI.
-- Packaging: pyproject-only, correct dependencies.
-- Logging instead of `print`.
-- Generic variable names elsewhere in CAFE and CRETA (naming rule, CLAUDE.md §9, 2026-11-15): rename them to names that identify what they hold. Includes the older names on lines M3 rewrote: `tab` in `read_phot`, `flux` in `cafeplot`, `cmap` in `gridExtraction`, `aper` in `doPSFGridPhotometry`, `stitchSpectrum`'s `idx`, `ratio_list` and `spectrum`, `par` in `cafe_grinder`'s refit loop, and the parameters `r_in`, `width` of `getSubCubes` and `doBackgroundSubtraction`.
-- Removing dead and commented-out code. Includes `sliceGridExtractionPhotometry` in `CRETA/cube_handler.py` (not called; it still passes the cube's 3-D WCS to `aperture_photometry`, G4).
 - Spitzer IRS and MIRI LRS support.
 - Docs.
 - Idea, logged 2026-11-15 (not tested, by my decision): one free spectrum-to-photometry scale factor, with a prior of the instrument's calibration uncertainty (MRS 5.6%). It would remove the calibration offset that a spectral error floor leaves in everything the spectrum pins down. It goes together with a floor: on its own, in the synthetic test, it stayed at its prior (s = 1.007 ± 0.044, truth 1.05).
@@ -769,6 +783,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-15: **`scale_peaks` multiplies**, and its argument is called `scaling_factor`: `scale_peaks(params, scaling_factor)` multiplies the line and PAH peaks (value, bounds, stderr) by `scaling_factor`; the calls are `scale_peaks(params, 1 / spec_norm_factor)` going in and `scale_peaks(result.params, spec_norm_factor)` coming back. Keep `par`. Amend `a763bd4` accordingly. **`b113094` approved.** Then check the renamed code statically for undefined names, leftover old names, and accidental reassignment or shadowing; fit results don't need to be bit-identical. **M4 order:** first check that fitting a JWST spectrum alone works well, including the non-unique convergence; then fits with real photometry; then cube-fit performance. **Standing rules for tests (CLAUDE.md §10):** every test report starts with its setup (spectrum file and z, inpars and opt files, the photometry with values and origin, the number of free parameters); the fake-photometry setup is only for functional checks that compare code versions on identical input, never for judging parameter values or fit stability.
 - 2026-11-15: **Commit `2ae9cb4` approved. M3 complete.** Push `dev` to my fork, showing me first what it publishes.
 - 2026-11-15: **`dev` pushed** (`1926c7b`→`6b9136c`, the 10 commits shown to me). Attribution: commit attribution was turned on (PR attribution off) when I approved M3; CLAUDE.md §2 describes that state, and nothing for GOALS carries a Claude line.
+- 2026-11-15: **Milestone split; don't start M4 yet.** M4: fitting a JWST spectrum alone, including the non-unique convergence. M5: fits with real photometry. M6: cube-fit performance and parallelisation, including the fitting order (#6). M7: clean-up and packaging. The CRETA aperture-correction path stays a separate item until the PSF cubes are found. Each milestone starts only after my approval. Earlier entries that give cube-fit performance as M4 mean M6.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -806,7 +821,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - Options: (a) port as it is; (b) port, stopping at gaps: each group starts from its own first band, the mirror of the default; (c) don't bring the option in.
     - Recommended: (b). No information crosses a gap, so no factor should. (b) is one line in `stitchSpectrum` (the last 1.0 at or before the band, as the default looks for the first at or after it). The console print of the growing ratio list is left out; the cumulative factors can be printed by calling `stitchSpectrum` itself.
 
-- Which real cube is the M4 benchmark (cube-fit performance).
+- Which real cube is the M6 benchmark (cube-fit performance; M4 before the split of 2026-11-15).
 - 2026-11-15: **Generic names introduced in M3's commits, with proposed names** (naming rule, CLAUDE.md §9).
   - `cafe.py`, `scale_peaks`: `factor` → `peak_multiplier`; `par` → `fit_param`.
   - `cafe.py`, `cafe_grinder`, normalisation: `norm` → `spec_median_abs_flux`; the dict comprehensions' `k, v` (over `cont_profs['flux0']`) → `comp_name, comp_flux0`.
@@ -871,7 +886,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-06: The CRETA `.py` files have CRLF line endings, while the CAFE files have LF. The M2 edits keep each file's endings.
 - 2026-11-14: Photometric weights (D2, now in `cafe_grinder`), end points: the first and last points of the combined spectral + photometric wavelength list get the full gap to their one neighbour as Δλ, while interior points get half the distance between their two neighbours. So an end photometric point (e.g. the longest far-IR band) gets about twice its share. Not acted on.
 - 2026-11-14: Photometric weights (D2), R₀: it is estimated from the mean sampling over the whole spectrum, assuming 2 channels per resolution element. In the tutorial spectrum R₀ = 2,513, while the sampling at 24 µm gives 2,000. Not acted on.
-- 2026-11-14: `make_profcube` calls `get_model_fluxes` once per profile per spaxel. With the 10 contcube profiles of M3 1d (3 before), building the contcube takes about 3.3× as long. It doesn't matter for 1D spectra, but it adds up for cubes. Information for M4.
+- 2026-11-14: `make_profcube` calls `get_model_fluxes` once per profile per spaxel. With the 10 contcube profiles of M3 1d (3 before), building the contcube takes about 3.3× as long. It doesn't matter for 1D spectra, but it adds up for cubes. Information for M4 (now M6, cube-fit performance).
 - 2026-11-14: `cafeplot`'s residual panel uses the combined spectral + photometric arrays. So it joins the photometric residuals to the spectral ones with a line, and its ±4σ y-range includes them. Display only; seen in the M3 group 2 real fit. Not acted on.
 - 2026-11-14: The contcube `WAVE` table is float32 (since M1 item H7). In the tutorial spectrum, the sub-band overlaps hold wavelengths only 2×10⁻⁷ µm apart, which float32 cannot separate. So 179 adjacent `WAVE` entries are equal; the fit's float64 grid is strictly increasing. This was already in the fixture contcube, before group 2. Not acted on.
 - 2026-11-15: Spectral error floor: the parameters' uncertainties come from the fit, so they reflect the floored χ² (lmfit rescales the covariance by χ²/dof, `scale_covar=True`). That covers the parcube `STDERR` and the relative-error tests in `check_fit_pars` (`REL_ERR_*`); only its 0.5σ peak test uses the quoted spectral errors. Not acted on.

@@ -134,7 +134,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
    - `_cafefit.asdf` stores each parameter's stderr as `fitParsErr`, next to `fitPars` (M3).
    - The fit figure's y-range includes the photometry (M3).
 
-## Cube flow (`cubemod`), the M4 target
+## Cube flow (`cubemod`), the M6 target
 1. **`read_cube`**
    - Reads a CRETA cube (`cafe_io.read_cretacube`). Wavelengths must be in µm.
    - Trims overlaps and moves to the rest frame, as in 1D.
