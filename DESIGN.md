@@ -96,7 +96,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
   - lines: `g_<name><comp>_{Wave,Gamma,Peak}`;
   - PAHs: `d<name>…`;
   - opacity features: `o_<name>…`.
-  - `_Peak` is in flux units.
+  - `_Peak` is in Jy for lines and PAHs, and an optical depth (unitless) for opacity features.
   - Commit `09f5df6` renamed `'gamma'`→`'width'` only in the feature lists in cafe.py. The parameter suffix is still `_Gamma`.
 - **`VGRAD`:** a global velocity shift in km/s, applied to the feature wavelengths.
 
@@ -148,7 +148,8 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
    - `least_squares` estimates the Jacobian numerically, so the cost is about (npar+1) evaluations of `get_model_fluxes` per iteration, times the number of refit loops.
 
 ## Conventions and invariants
-- Wavelengths are in µm and in the rest frame after reading. Fluxes are in Jy (`Spectrum1D(..., flux=...*u.Jy)`). The redshift is stored on the object.
+- **Units are fixed** (decided 2026-11-15): fluxes in Jy, wavelengths in µm. The reading code labels the data so (`Spectrum1D(..., flux=...*u.Jy)`) without converting them. Nothing depends on "flux units": a result that changes with the flux scale depends on the source's flux level (brightness).
+- Wavelengths are in the rest frame after reading. The redshift is stored on the object.
 - Parcube: FITS image HDUs (e.g. `VALUE`) with shape `(n_params, ny, nx)`. In the tutorial, `parcube['VALUE'].data[-1,0,0]` is `VGRAD`.
 - Index order is mixed:
   - `ind_seq` and `ref_ind_seq` are (y, x);

@@ -52,6 +52,7 @@
 - In this project that means: never change fit settings (`FTOL`, `MAX_LOOPS`, `FIT_CHK`, `max_nfev`, fit method), parameter defaults, bounds or expressions, tables, wavelength or temperature grids, or model components to make something faster, simpler or more convenient. Report costs as information only.
 - Comparison tolerances for regression tests are my decision. Propose them, with reasons, and wait for my OK.
 - Respect the units and conventions in `DESIGN.md`. If you find the docs or the code inconsistent, flag it.
+- **CAFE's units are fixed** (decided 2026-11-15): fluxes in Jy, wavelengths in µm. Never describe anything as depending on "flux units". When a result changes with the flux scale, describe it as depending on the source's flux level (brightness).
 
 ## 5. Folders
 - **Project folder:** the repo. Until the end of M1 that is `/Users/tanio/Sync/pywork/CAFE` (my pre-sync folder). After the freeze it is the fresh clone at the same path. It holds code and project files only.
