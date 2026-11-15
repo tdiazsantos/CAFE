@@ -199,8 +199,8 @@ class cube_handler:
         DQ_phot = []
         # For every wavelength
         for i in range(len(data)):
-            phot_table = aperture_photometry(data[i,:,:], aperture, wcs=self.wcs, error=self.error_data[i,:,:])
-            DQ_phot_table = aperture_photometry(self.DQ[i,:,:], aperture, wcs=self.wcs)
+            phot_table = aperture_photometry(data[i,:,:], aperture, wcs=self.wcs.celestial, error=self.error_data[i,:,:])
+            DQ_phot_table = aperture_photometry(self.DQ[i,:,:], aperture, wcs=self.wcs.celestial)
             res.append(phot_table)
             DQ_phot.append(DQ_phot_table["aperture_sum"])
         aps = [aperture] * len(data)  
