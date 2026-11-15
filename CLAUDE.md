@@ -84,3 +84,12 @@
 - Variable names must identify what they hold. No generic names such as `r_in`, `width`, `s`, `dl`, `norm` or `factor`.
 - This applies to all code written or changed from now on, and to the code added in M3.
 - Generic names elsewhere in CAFE and CRETA go on the clean-up list. Don't change them in passing.
+- The more fundamental a variable is, the less explicit its name needs to be (added 2026-11-15).
+  - Core names such as `wave`, `flux`, `z` or `params` stay as they are. Natural derived names stay too, e.g. `par` for one item of `params`.
+  - Explicit names are for secondary variables: helpers, indices and intermediate results.
+  - The same quantity keeps the same name across functions.
+  - Don't propose renaming core or natural names.
+
+## 10. Test reports (decided 2026-11-15)
+- Every test report starts with its setup: the spectrum file and z, the inpars and opt files, the photometry with its values and origin, and the number of free parameters.
+- The fake-photometry setup is only for functional checks that compare code versions on identical input. Never use it to judge parameter values or fit stability.
