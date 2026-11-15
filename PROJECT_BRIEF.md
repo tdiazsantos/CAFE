@@ -211,7 +211,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
 - The changes and the findings on each are in the M1 report. The 8 items merged in GOALS PR #99 are already in.
-- Claude co-authorship may start here, only on commits that stay on my fork. Attribution in `.claude/settings.local.json` stays off until I approve M3 (CLAUDE.md §2).
+- Claude co-authorship applies from here, only on commits that stay on my fork. `.claude/settings.local.json`: commit attribution on and PR attribution off since 2026-11-14 (CLAUDE.md §2).
 
 ### M4 — Cube-fit performance
 - **Order (my decision, 2026-11-15):** (1) check that fitting a JWST spectrum alone works well, including the non-unique convergence; (2) then fits with real photometry; (3) then cube-fit performance (below).
