@@ -1089,8 +1089,7 @@ class creta:
                     #[sub-channel][wavelength][grid_point]
                     photo = all_photometries[i][j][grid_point_idx]["aperture_sum"]
                     err = all_photometries[i][j][grid_point_idx]["aperture_sum_err"]
-                    xx = all_photometries[i][j][grid_point_idx]["xcenter"]
-                    yy = all_photometries[i][j][grid_point_idx]["ycenter"]
+                    xx, yy = all_aps[i][j].positions[grid_point_idx]
                     all_apers.append(photo)
                     all_error.append(err)
                     
