@@ -924,7 +924,7 @@ class creta:
         #%% Load PSF
         if aperture_correction or convolve:
             print('Loading PSFs')         
-            PSF_all = user.getSubCubes(PSFs_path, PSF_files_sort, r, l_ap, point_source, True, centering, False, 0, 0, 1, convolve, ignore_DQ)         
+            PSF_all = user.getSubCubes(PSFs_path, PSF_files_sort, r_ap, l_ap, point_source, True, centering, False, 0, 0, 1, convolve, ignore_DQ)         
             
         
         #%% Centering Process
