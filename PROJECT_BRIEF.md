@@ -181,6 +181,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - Removing dead and commented-out code.
 - Spitzer IRS and MIRI LRS support.
 - Docs.
+- Idea, logged 2026-11-15 (not tested, by my decision): one free spectrum-to-photometry scale factor, with a prior of the instrument's calibration uncertainty (MRS 5.6%). It would remove the calibration offset that a spectral error floor leaves in everything the spectrum pins down. It goes together with a floor: on its own, in the synthetic test, it stayed at its prior (s = 1.007 ± 0.044, truth 1.05).
 
 ### GOALS bugs found after M2 (logged 2026-11-14)
 Each was found in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers are for `dev` before the fixes. Since 2026-11-14, fixes go only into `dev`, with my approval (CLAUDE.md §2).
@@ -336,6 +337,9 @@ cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBA
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/synth/C && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../synth_fit.py /Users/tanio/Sync/pywork/CAFE C
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/synth/Cfloor && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../synth_fit.py /Users/tanio/Sync/pywork/CAFE Cfloor
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/synth/Cscale && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../synth_fit.py /Users/tanio/Sync/pywork/CAFE Cscale
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/synth/Cfloor_0.0075 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../synth_fit.py /Users/tanio/Sync/pywork/CAFE Cfloor 0.0075
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/synth/Cfloor_0.03 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../../synth_fit.py /Users/tanio/Sync/pywork/CAFE Cfloor 0.03
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python synth_compare.py C Cfloor_0.0075 Cfloor Cfloor_0.03 Cscale
 ```
 - **Weighting test (2026-11-15):** `weighting_W2246.py` replaces only the χ² that `cafe_grinder` hands to lmfit (variants C, B, Cfloor). The W2246 tables reach `dev`'s code through `tests/M3/cafe_dir_W2246/` (symlinks to `dev`'s tables plus the five W2246 tables from the pre-sync folder), passed as `cafe_dir`.
 - **Fixture:** made 2026-11-14 with code `21e0cbf`, which equals GOALS `master` `ca10c84`. It is the NGC7469 tutorial spectrum fitted with `inpars_jwst_miri_AGN.ini` and `default_opt.cafe` (z = 0.0163), in 42.5 s.
@@ -592,6 +596,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - From now on, fixes to GOALS bugs go only into `dev` on my fork. My fork's `master` stays equal to GOALS `master`.
   - Applied at once: cherry-pick `f44f96e` and `c0bd2c6` onto `dev`, delete the local branch `GOALS-photometry-fixes-2026-11` (never pushed), and rerun the photometry fit with `photometry_opt.cafe` on `dev`. Then wait before group 3.
 - 2026-11-15: **D2 option C stays as the photometry weighting.** The spectral error budget is a separate physics decision, to be settled with a synthetic known-truth test: one CAFE model with known parameters, a spectrum at realistic SNR, photometry, a ~5% calibration offset and a ~1–2% model mismatch. Variants: (1) option C alone; (2) option C plus a per-channel 1–2% model-error floor; (3) option C plus one free spectrum-to-photometry scale with a 5.6% prior. Run from the work folder, no code change on `dev`, then stop for my decision.
+- 2026-11-15: **One last synthetic check of the floor, and the scale factor deferred.** Same setup, from the work folder, no code change on `dev`: true mismatch 1.5%, fitted with floors of 0.75% and 3%, to see whether the recovery of the dust shape and the far-IR bands still holds. The free scale factor for the calibration offset is logged as an idea for later (under "Later"), not tested. Then stop for my decision on the floor.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -628,6 +633,14 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - (3): the scale stays at its prior, s = 1.007 ± 0.044 (truth 1.05). Without a floor, the mismatch dominates the spectral χ², and the photometry has too little leverage to set s.
   - (2) recovers the shape and the far-IR, but everything tied to the spectrum keeps the 5% calibration offset (features +4.8%, dust fluxes +3–5%, the 4.4 and 24 µm bands +5–7%). Floor plus scale together (not run) is the obvious candidate to remove it.
   - In all three, the hot dust (3.4% of the truth's flux) is poorly recovered (fHOT 1.3–2.6×; HOT_TMP at its upper bound in (2)), and the AGN disc (0.002%) is unconstrained. This is a degeneracy, not an error-budget effect.
+- 2026-11-15: **Floor sensitivity (my request): true mismatch 1.5%, fitted with floors of 0.75%, 1.5% and 3%; my decision on the floor pending.** Same data and code as above; only the floor changes (`synth_fit.py <checkout> Cfloor <floor>`; logs `synth_Cfloor_0.0075.txt`, `synth_Cfloor_0.03.txt`).
+  - Photometry's share of χ²: 6.7%, 18%, 44%. Spectral χ²/N with the floored errors: 2.69, 0.70, 0.18 (quoted errors: 2,483, 2,518, 2,555). Option C alone: 0.26%.
+  - The recovery holds across the factor of 4. COO_TMP +0.7%, +0.9%, +0.8%; WRM_TMP +1.1%, +1.3%, −0.0%; COO_TAU −8.6%, −9.1%, −9.3%. Far-IR bands (70–250 µm) / truth: 0.984–0.997, 0.978–0.994, 0.976–0.993 (option C alone: 1.13–1.18). 2.2 µm: 1.01 in all three.
+  - It weakens at 3%, twice the mismatch: WRM_TAU +4%, −4%, −17%; STB_TAU −6%, +4%, +14%. The spectrum's hold on the silicate absorption loosens.
+  - The 3.5 and 4.4 µm bands (just blueward of the spectrum) follow their noisy photometric points more as the floor grows: model/truth 1.02, 1.03, 1.04 and 1.05, 1.07, 1.08, where the data are 1.04 and 1.09 × truth. This is photometric noise being fitted, not a bias.
+  - Unchanged by the floor: the 5% calibration offset in what the spectrum pins down (24 µm band 1.049, cool dust 1.05, feature-peak median 1.04, 1.05, 1.03), and the hot-dust / AGN-disc degeneracy (fHOT 2.0–2.6×, HOT_TMP 1,022–1,027 K vs 695 K).
+  - Not tested: floors between 0 and 0.75%, where the photometry's leverage falls from 6.7% to 0.26%; other noise realisations (differences of ~1% between the runs may be noise).
+  - Cost (information only): 30,004 fit steps at 0.75%, 8,227 at 1.5%, 7,405 at 3%.
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
