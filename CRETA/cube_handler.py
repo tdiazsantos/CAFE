@@ -219,7 +219,7 @@ class cube_handler:
             # print(self.xys[i][0], self.xys[i][1],  self.rs[0][0], np.array( self.rs)[0,0] )
             aper = RectangularAperture([self.xys[i][0], self.xys[i][1]], self.rs[0][i]*2., self.rs[0][i]*2.)
             #apers.append(aper)
-            phot_table = aperture_photometry(self.cube_before[i,:,:], aper, wcs=self.wcs, error=self.error_data[i,:,:])
+            phot_table = aperture_photometry(self.cube_before[i,:,:], aper, wcs=self.wcs.celestial, error=self.error_data[i,:,:])
             photometries.append(phot_table["aperture_sum"])
         #print(phot_table)
         #print('exw mazepsei sunolika ', len(apers)) 
