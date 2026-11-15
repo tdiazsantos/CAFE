@@ -185,6 +185,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - **`dev` pushed** 2026-11-15 with my OK (`7880a8d`→`beb8cf6`, the 5 commits shown to me).
 - **The M3 list is done, apart from the `DESIGN.md` update** (checked 2026-11-15 against `reports/M3_plan_2026-11-14.md`): groups 1–5 done (1e skipped as planned), D1–D8 decided, and the spectral error floor added.
 - **The grid extraction runs in `cafe-dev`** (my request, 2026-11-15): G7, G8 and the PSF-path half of G4 fixed on `dev`, 3 commits `56b4c75`, `d41e6b1`, `1e66caf` (with the co-author trailer); details and tests under "GOALS bugs found after M2". Waiting for my approval. Not pushed.
+- **`DESIGN.md` updated for all M3 changes** (2026-11-15, the last M3 step): the opt-file option, `read_spec`/`read_phot`, the normalisation, error floor and photometric weights in `cafe_grinder`, the products, a new section on CRETA's extraction and stitching (with the photutils dependence), and a list of the M3 commits. Waiting for my review. Not pushed.
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
