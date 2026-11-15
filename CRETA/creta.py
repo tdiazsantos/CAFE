@@ -350,7 +350,7 @@ class creta:
             
             meta_dict = {'extraction_RA':ra_cent, 'extraction_DEC':dec_cent, "r_ap":aper_rs[j], "exrtaction_type":aper_type,
                          "ap_corr":aperture_correction, "Centering":centering, 'Centering_lambda':l_c,
-                         "bkg_sub":background, "bkg_r_in":r_ann_in, "bkg_an_w":ann_width
+                         "bkg_sub":background, "bkg_r_in":r_in, "bkg_an_w":width
             }
             
             #print("For radius", str(aper_rs[j]), "arcsec:")
