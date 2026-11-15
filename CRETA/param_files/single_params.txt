@@ -10,3 +10,4 @@ lambda_cent = 5.4               # [microns] The wavelength at which to perform t
 background_sub = False          # [True/False]
 r_ann_in = 0.0                  # [arcsec] When background_sub=True, this defines the inner annulus size. This size will NOT scale with aperture size even when point_source=True
 ann_width = 0.0                 # [arcsec] When background_sub=True, this defines the annulus width. This size will NOT scale with aperture size even when point_source=True
+stitch_band = ch4-long          # One of the cubes: the other bands are scaled to its flux level (default: the last cube)

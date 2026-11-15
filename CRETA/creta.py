@@ -100,6 +100,8 @@ class creta:
 
             sel_cubes = params['cubes'].split("#")[0].split(",")
             sel_cubes = [sel_cube.strip(' ') for sel_cube in sel_cubes]
+            # The band whose flux level the stitched spectrum keeps (default: the last one)
+            ref_band = sel_cubes.index(params.get('stitch_band', sel_cubes[-1]).split("#")[0].strip())
 
             # Store remaining parameters
             params['point_source'] = params['point_source'].split("#")[0].replace(" ","")
@@ -201,6 +203,7 @@ class creta:
         print('     Load User Parameters ')
         print('########################################')
         print('Cubes: '+str(sel_cubes))
+        print('Stitching reference band: '+sel_cubes[ref_band])
         print('Aperture radii: '+str(user_rs_arcsec)+' (arcsec)')
         print('RA,δ: ['+str(user_ra_sex)+','+str(user_dec_sex)+'] (degrees)')
         print('Point Source: '+str(point_source))
@@ -383,9 +386,9 @@ class creta:
                     beforeStitch = np.array(data.corrected_spectrum)[:,j]                     
                     beforeStitch_error = np.array(data.error)[:,j]
                     
-                stitched_flux = preprocess.stitchSpectrum(list(np.array(all_s_ratios)[j,:]), i, beforeStitch) #stitch aperture
+                stitched_flux = preprocess.stitchSpectrum(list(np.array(all_s_ratios)[j,:]), i, beforeStitch, ref_band) #stitch aperture
                 data.stitched_spectrum.append(stitched_flux) #stitched spectrum
-                stitched_error= preprocess.stitchSpectrum(list(np.array(all_s_ratios)[j,:]), i, beforeStitch_error) #stitch aperture
+                stitched_error= preprocess.stitchSpectrum(list(np.array(all_s_ratios)[j,:]), i, beforeStitch_error, ref_band) #stitch aperture
                 data.stitched_error.append(stitched_error) #stitched spectrum                                    
                 
                 #else: #if next cube does not exists
@@ -776,6 +779,8 @@ class creta:
             
             sel_cubes = grid_params['cubes'].split("#")[0].split(",")
             sel_cubes = [sel_cube.strip(' ') for sel_cube in sel_cubes]
+            # The band whose flux level the stitched spectrum keeps (default: the last one)
+            ref_band = sel_cubes.index(grid_params.get('stitch_band', sel_cubes[-1]).split("#")[0].strip())
 
             # Read the list of cubes in data
             files = os.listdir(data_path)
@@ -1140,9 +1145,9 @@ class creta:
                     beforeStitch_error = np.array(data.error)[0]    
                     
                 #perform the stitching and assign it back to the cubes                                        
-                stitched_flux = preprocess.stitchSpectrum(list(np.array(all_s_ratios)), i, beforeStitch) #stitch aperture
+                stitched_flux = preprocess.stitchSpectrum(list(np.array(all_s_ratios)), i, beforeStitch, ref_band) #stitch aperture
                 data.stitched_spectrum = stitched_flux #stitched spectrum
-                stitched_error= preprocess.stitchSpectrum(list(np.array(all_s_ratios)), i, beforeStitch_error) #stitch aperture
+                stitched_error= preprocess.stitchSpectrum(list(np.array(all_s_ratios)), i, beforeStitch_error, ref_band) #stitch aperture
                 data.stitched_error = stitched_error                          
                 
             
@@ -1150,7 +1155,7 @@ class creta:
             all_stitched_error = []
             final_apers = []
             final_ls = []
-            for i in range(len(realData_all)-1):
+            for i in range(len(realData_all)):
                 
                 final_apers.extend(np.array(realData_all[i].apers)[0,:]) 
                 final_ls.extend(np.array(realData_all[i].ls)[:]) 
@@ -1158,16 +1163,6 @@ class creta:
                 all_stitched_error.extend((realData_all[i].stitched_error))#if aperture correction error user corrected error
                 
                 
-            #attach the speuctum of last sub-channel @stitched spectrum 47
-            final_apers.extend(np.array(realData_all[-1].apers)[0,:])
-            final_ls.extend(np.array(realData_all[-1].ls)[:])                         
-            if aperture_correction:
-                #print('Ta teleutaia nabwww')
-                all_stitched_spectrum.extend(np.array(realData_all[-1].spectrum_PSF_corrected))  
-                all_stitched_error.extend(np.array(realData_all[-1].error_PSF_corrected))
-            else:
-                all_stitched_spectrum.extend(np.array(realData_all[-1].corrected_spectrum)[0])  
-                all_stitched_error.extend(np.array(realData_all[-1].error)[0])             
                 
             final_error= []   
             PSF_ratio_all = []
