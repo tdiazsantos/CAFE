@@ -45,7 +45,7 @@ class creta:
         
     # @aperture_type: Aperture type: 0 for Circular, 1 for Rectangular. (int)
     # @convolve: Fix resolution option. (Boolean)
-    # @parameter_file: Use the parameters file or the command execution option. (boolean)
+    # @parameter_file: Must be True: the parameters are read from the parameter file. (boolean)
     # @user_ra: Center RA in degrees. (float)
     # @user_dec: Center Dec in degrees. (float)
     # @user_r_ap: user defined radius in arcsec. (float)
@@ -169,26 +169,8 @@ class creta:
                 user_dec_sex = user_radec_sex.dec.to_string()
 
 
-        # Parameters are given by command line
         else:
-            user_rs_arcsec = user_r_ap
-            l_c = lambda_cent
-            r_in = r_ann_in
-            width = ann_width
-            params = []
-            params.append(str(sel_cubes))
-            params.append(str(user_r_ap))
-            params.append(str(user_ra))
-            params.append(str(user_dec))
-            params.append(str(point_source))
-            params.append(str(lambda_ap))
-            params.append(str(aperture_correction))
-            params.append(str(centering))
-            params.append(str(lambda_cent))
-            params.append(str(background))
-            params.append(str(r_ann_in))
-            params.append(str(ann_width))
-            user_ra_sex, user_dec_sex = str(user_ra), str(user_dec)
+            raise ValueError('CRETA reads its parameters from the parameter file: parameter_file=False is not supported')
             
                          
         #%% 
@@ -841,6 +823,8 @@ class creta:
 
                 
             user_center = grid_params['user_center'].split("#")[0].replace(" ",'') == 'True'
+        else:
+            raise ValueError('CRETA reads its parameters from the parameter file: parameter_file=False is not supported')
             
             
         import time 
@@ -1313,20 +1297,19 @@ class creta:
 
         # self.customFITSReader(output_file_name) 
         
-        if parameter_file:
-            #outparfile_name_grid = output_path+"JWST_"+str(now_str)+"_"+str(i)+"_Grid_params_file.txt"
-            #shutil.copyfile("grid_params.txt",outparfile_name_grid)
-            outparfile_name_grid = output_path+file_naming+"_params_file.txt"
-            shutil.copyfile(parfile_path+parfile_name, outparfile_name_grid)
+        #outparfile_name_grid = output_path+"JWST_"+str(now_str)+"_"+str(i)+"_Grid_params_file.txt"
+        #shutil.copyfile("grid_params.txt",outparfile_name_grid)
+        outparfile_name_grid = output_path+file_naming+"_params_file.txt"
+        shutil.copyfile(parfile_path+parfile_name, outparfile_name_grid)
             
-            #ff = open(outparfile_name_grid, "a")
-            #ff.write("\npoint_source = "+str(point_source)+"\n")
-            #ff.write("lambda_ap = "+str(l_ap)+"\n")
-            #ff.write("centering = "+str(centering)+"\n")
-            #ff.write("lambda_cent = "+str(lambda_cent)+"\n")
-            #ff.write("aperture_correction = "+str(aperture_correction)+"\n")
-            #ff.write("convolve = "+str(convolve)+"\n")
-            #ff.close()
+        #ff = open(outparfile_name_grid, "a")
+        #ff.write("\npoint_source = "+str(point_source)+"\n")
+        #ff.write("lambda_ap = "+str(l_ap)+"\n")
+        #ff.write("centering = "+str(centering)+"\n")
+        #ff.write("lambda_cent = "+str(lambda_cent)+"\n")
+        #ff.write("aperture_correction = "+str(aperture_correction)+"\n")
+        #ff.write("convolve = "+str(convolve)+"\n")
+        #ff.close()
             
         #return all_dfs, res_all, realData_all, all_meta_dicts
              

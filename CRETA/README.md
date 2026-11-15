@@ -57,11 +57,6 @@ Single Extraction parameters:
 ```aperture_type```:  Aperture type: 0 for Circular, 1 for Rectangular.<br/>
 ```convolve:```:  Not currently supported. Whether to onvolve the cubes to a given resolution (PSF size at a given wavelength).<br/>
 
-Single extractions can be parametrized via command line. The user can define a subset or all parameter options based on the desired extraction.
-
-```python 
-c.singleExtraction(parameter_file=False, user_ra=273.66541, user_dec=34.0295, centering=True, lambda_cent=5.4, point_source=False)
-```
 ---
 
 Grid Extraction parameters:
@@ -77,12 +72,6 @@ Grid Extraction parameters:
 ```spax_size```: Size of the box side used for extraction at each grid point. Use -1 value for defalut option, which is the same size as the distance between two points.<br/>
 ```step_size:```: Distance between two grid points. Use -1 for default option, which is the pixel scale of the longest wavelength cube.<br/>
 ```convolve:```:  Not currently supported. Whether to onvolve the cubes to a given resolution (PSF size at a given wavelength).<br/>
-
-Grid extraction can be parametrized via command line. The user can define a subset or all parameter options based on the desired extraction.
-
-```python 
-c.gridExtraction(parameter_file=False, user_ra=49.23411, user_dec=-23.2998, centering=True, lambda_cent=8.5, point_source=False)
-```
 
 ---
 #### Single Extraction Parameters
