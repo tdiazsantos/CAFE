@@ -804,7 +804,7 @@ class creta:
                 if aperture_correction or convolve:
                     if any(sel_cube in PSF_file for PSF_file in PSF_files):
                         for PSF_file in PSF_files:
-                            if sel_cube in PSF_file: files_sort.append(PSF_file)
+                            if sel_cube in PSF_file: PSF_files_sort.append(PSF_file)
                     else:
                         raise Exception('One or more PSF cubes not in data directory')
 
@@ -924,10 +924,7 @@ class creta:
         #%% Load PSF
         if aperture_correction or convolve:
             print('Loading PSFs')         
-            PSF_files = os.listdir(PSFs_path)
-            #exclude hidden files from mac
-            PSF_files = [i for i in PSF_files if not i.startswith('.')]
-            PSF_all = user.getSubCubes(PSFs_path, PSF_files, r, l_ap, point_source, True, centering, False, 0, 0, 1, convolve, ignore_DQ)         
+            PSF_all = user.getSubCubes(PSFs_path, PSF_files_sort, r, l_ap, point_source, True, centering, False, 0, 0, 1, convolve, ignore_DQ)         
             
         
         #%% Centering Process
