@@ -79,3 +79,8 @@
 ## 8. Bringing in my local changes (decided 2026-11-14)
 - Faithfulness to my old code is not a goal. Write each change in the simplest form that gives the same result (personal rule on simplicity).
 - If my old code can be replaced by something shorter, or by an existing NumPy, astropy or lmfit function, do that, and say so in the change's paragraph (review rule, §2).
+
+## 9. Naming (decided 2026-11-15)
+- Variable names must identify what they hold. No generic names such as `r_in`, `width`, `s`, `dl`, `norm` or `factor`.
+- This applies to all code written or changed from now on, and to the code added in M3.
+- Generic names elsewhere in CAFE and CRETA go on the clean-up list. Don't change them in passing.

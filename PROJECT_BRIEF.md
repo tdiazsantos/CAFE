@@ -191,6 +191,8 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
   - The "CRETA aperture-correction path" item (G10, G11 and G11's two related problems) stays open, to be fixed and tested end to end together once CRETA's PSF cubes are found (my decision, 2026-11-15).
   - `dev` pushed 2026-11-15 with my OK (`beb8cf6`→`1926c7b`, 12 commits).
   - G12 fixed on `dev`, commit `1fc4f5a` (my request, 2026-11-15); details under "GOALS bugs found after M2". `DESIGN.md`'s M3 list gets it. Waiting for my approval; then M3 is marked complete. Not pushed.
+  - Naming rule (CLAUDE.md §9, my decision 2026-11-15) applied: `r_in` and `width` in `singleExtraction` renamed `bkg_ann_r_in` and `bkg_ann_width`, commit `2297264` (8 lines; no change in behaviour). The generic names that M3's commits introduced are listed with proposed names under "Awaiting my OK". Waiting for my approval before M3 is marked complete or anything is pushed.
+    - Tests (real single extractions, `cafe-dev`; `g12_meta.py`): with background subtraction on (`single_all_bkgsub.txt`: `r_ann_in = 0.8`, `ann_width = 0.3`), the output after the rename is bit-identical to the code before it (`7396590`, worktree `cmp/rename_before`), data, `_cube.fits` and metadata string; `single_all_bkgmeta` and `single_all` likewise against the G12 runs. Smoke test: 0 failed.
 - Start only after my approval (CLAUDE.md §1).
 - Covers the bugs that exist only in my local changes.
 - Bring my local changes from `local-wip-2026-11` (`135aa70`, in the pre-sync folder) into `dev`, one at a time, each tested.
@@ -217,6 +219,7 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 - Tests and CI.
 - Packaging: pyproject-only, correct dependencies.
 - Logging instead of `print`.
+- Generic variable names elsewhere in CAFE and CRETA (naming rule, CLAUDE.md §9, 2026-11-15): rename them to names that identify what they hold.
 - Removing dead and commented-out code. Includes `sliceGridExtractionPhotometry` in `CRETA/cube_handler.py` (not called; it still passes the cube's 3-D WCS to `aperture_photometry`, G4).
 - Spitzer IRS and MIRI LRS support.
 - Docs.
@@ -453,6 +456,8 @@ cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBA
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python g6_run.py /Users/tanio/Sync/pywork/CAFE grid_all.txt g9_after_dev   # G9; and stitch_run.py grid grid_all.txt g9_after_dev_grid_all
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python stitch_run.py /Users/tanio/Sync/pywork/CAFE single single_all_bkgmeta.txt g12_after_bkgmeta   # G12; likewise single_all.txt g12_after_single_all (g12_before_bkgmeta on eb89a4f)
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python g12_meta.py g12_after_bkgmeta single_all_bkgmeta.txt after_single_all
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python stitch_run.py /Users/tanio/Sync/pywork/CAFE single single_all_bkgsub.txt rn_after_bkgsub   # rename; rn_before_bkgsub with PYTHONPATH and checkout /Users/tanio/pywork/cafe_work/cmp/rename_before (7396590); likewise rn_after_bkgmeta, rn_after_single_all
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python g12_meta.py rn_after_bkgsub single_all_bkgsub.txt rn_before_bkgsub
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python test_parameter_file.py /Users/tanio/Sync/pywork/CAFE 744dc2a   # G5; and stitch_run.py single single_all.txt g5_after_single_all, grid grid_all.txt g5_after_grid_all
 ```
 - **Weighting test (2026-11-15):** `weighting_W2246.py` replaces only the χ² that `cafe_grinder` hands to lmfit (variants C, B, Cfloor). The W2246 tables reach `dev`'s code through `tests/M3/cafe_dir_W2246/` (symlinks to `dev`'s tables plus the five W2246 tables from the pre-sync folder), passed as `cafe_dir`.
@@ -738,6 +743,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-15: **Before marking M3 complete, fix G5 and G6.** G6: confirm it with a real NGC7469 grid extraction with aperture correction, then fix it; show the failing case, the diff hunk by hunk with reason paragraphs, and the rerun. G5: tell me whether the `parameter_file=False` path is used anywhere (CRETA, my notebooks and scripts in the pre-sync folder), then propose the simplest fix, or removing that path if nothing uses it, and wait for my decision.
 - 2026-11-15: **Approved: `56b4c75`, `d41e6b1`, `1e66caf` (the grid fixes) and `82539c1` (G6).** **G9: use `r_ap` for the PSF photometry**, the same aperture as the data, which is what an aperture correction requires; show me the diff hunk by hunk with its reason paragraph. The path stays untested end to end until CRETA's PSF cubes are found. **G10 stays logged.** **G5: option (a)**; show me its diff too. In `DESIGN.md`, change the cube flow's "the M2 target" to "the M4 target", and add the G6, G9 and G5 commits to the M3 list. Then wait for my approval before pushing.
 - 2026-11-15: **`dev` pushed** (`beb8cf6`→`1926c7b`, the 12 commits shown to me). **G9 is recorded as a typo fix** (`r` was meant to be `r_ap`), not a physics decision. **Fix G12 now**: the metadata must record `bkg_r_in` and `bkg_an_w` from the parameter file; show the failing case, the diff hunk by hunk with its reason paragraph, and the rerun. **G10, G11 and G11's two related problems are one item, "CRETA aperture-correction path"**, to be fixed and tested end to end together once CRETA's PSF cubes are found; not with stand-in PSFs. After I approve G12, mark M3 complete in the brief and stop.
+- 2026-11-15: **Naming rule (standing; CLAUDE.md §9):** variable names must identify what they hold; no generic names such as `r_in`, `width`, `s`, `dl`, `norm` or `factor`. It applies to all code written or changed from now on, and to the code added in M3. Apply it now: rename `r_in` and `width` in `singleExtraction` (e.g. `bkg_ann_r_in`, `bkg_ann_width`), and list the generic names introduced in M3's commits with proposed names. Generic names elsewhere in CAFE and CRETA go on the clean-up list, not changed now. Show me the renames hunk by hunk with their reason paragraphs, and wait for my approval before marking M3 complete or pushing.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -776,6 +782,16 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - Recommended: (b). No information crosses a gap, so no factor should. (b) is one line in `stitchSpectrum` (the last 1.0 at or before the band, as the default looks for the first at or after it). The console print of the growing ratio list is left out; the cumulative factors can be printed by calling `stitchSpectrum` itself.
 
 - Which real cube is the M4 benchmark (cube-fit performance).
+- 2026-11-15: **Generic names introduced in M3's commits, with proposed names** (naming rule, CLAUDE.md §9).
+  - `cafe.py`, `scale_peaks`: `factor` → `peak_multiplier`; `par` → `fit_param`.
+  - `cafe.py`, `cafe_grinder`, normalisation: `norm` → `spec_median_abs_flux`; the dict comprehensions' `k, v` (over `cont_profs['flux0']`) → `comp_name, comp_flux0`.
+  - `cafe.py`, `cafe_grinder`, error floor: `floor` → `spec_unc_floor` (the option's name); `spec_fit` → `spec_floored_unc`.
+  - `cafe.py`, `cafe_grinder`, photometric weights: `R_0` → `spec_resolving_power`; `wave` → `spec_phot_wave`; `s` → `spec_phot_sort_idx`; `dl` → `spec_phot_delta_wave`.
+  - `cafe_io.py`, `.asdf` output: `p` in `{p: fitPars[p].stderr for p in fitPars}` → `par_name`.
+  - `creta.py`: `ref_band` (it holds an index) → `stitch_ref_idx`. `cube_preproc.py`, `stitchSpectrum`: the argument `ref` → `stitch_ref_idx`.
+  - Kept, as they identify what they hold: `flux_scale`, `ignore_DQ`, `flux_lam`, `fFTS_0` (the module's naming), `bkg_ann_r_in`, `bkg_ann_width`.
+  - Older generic names on lines M3 rewrote (not introduced by M3): `ratio` in `stitchSpectrum` → `band_to_ref_multiplier`; `xx, yy` in the grid (G8) → `x_center_pix, y_center_pix`; `tab` in `read_phot` (5 lines) → `phot_table`; `flux` in `cafeplot`; `cmap` in the grid; `aper` in `doPSFGridPhotometry`; `idx`, `ratio_list`, `spectrum` (`stitchSpectrum`'s other arguments). Proposed: rename `ratio` and `xx, yy` with the M3 names (their lines were written in M3), and put the rest on the clean-up list.
+  - Not listed: loop indices (`i`, `j`) of loops M3 did not write.
 - 2026-11-15: **G5 (`parameter_file=False`): fix or remove** (my request: tell me whether the path is used, then propose the simplest fix or its removal). Nothing uses it (see G5).
   - (a) Remove the path, keep the keyword: `parameter_file=False` raises a `ValueError` saying the extraction reads its parameters from the parameter file; the single extraction's keyword branch (19 lines) and the README's two "parametrized via command line" paragraphs go. Every existing call (all pass `True`) keeps working.
   - (b) Make it work: add `cubes` and `stitch_band` keywords, move the file listing and sorting out of the parameter-file block, and give the grid a keyword branch. Its keyword defaults (e.g. the aperture radius) would be physics defaults to decide.
