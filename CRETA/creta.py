@@ -1052,7 +1052,7 @@ class creta:
         
         aper_type = "extended_source"
 
-        cmap = plt.cm.get_cmap('hsv', len(sky_list)+1)
+        cmap = plt.get_cmap('hsv', len(sky_list)+1)
 
         all_dfs = []
         all_spec1ds = []
