@@ -27,13 +27,13 @@ cafeio = cafe_io()
 
 #import ipdb
 
-def scale_peaks(params, factor):
-    """Multiply the line and PAH peaks, the only parameters in Jy, by factor (value, bounds and stderr)"""
+def scale_peaks(params, scaling_factor):
+    """Multiply the line and PAH peaks, the only parameters in Jy, by scaling_factor (value, bounds and stderr)"""
     for par in params.values():
         if par.name[0] in 'gd' and par.name.endswith('_Peak'):
-            par.min, par.max, par.value = par.min * factor, par.max * factor, par.value * factor
+            par.min, par.max, par.value = par.min * scaling_factor, par.max * scaling_factor, par.value * scaling_factor
             if par.stderr is not None:
-                par.stderr *= factor
+                par.stderr *= scaling_factor
 
 def cafe_grinder(self, params, spec, phot):
     """
@@ -47,14 +47,14 @@ def cafe_grinder(self, params, spec, phot):
     nproc = self.inopts['FIT OPTIONS']['NPROC']
     # The fit runs on the data divided by the spectrum's median |flux|, with the line and PAH peaks and the continuum reference
     # fluxes scaled to match, so that it does not depend on the source's flux level. Peaks and reference fluxes are scaled back after it
-    norm = np.nanmedian(np.abs(spec['flux']))
-    spec = dict(spec, flux=spec['flux'] / norm, flux_unc=spec['flux_unc'] / norm)
-    scale_peaks(params, 1 / norm)
-    self.cont_profs['flux0'] = {k: v / norm for k, v in self.cont_profs['flux0'].items()}
+    spec_norm_factor = np.nanmedian(np.abs(spec['flux']))
+    spec = dict(spec, flux=spec['flux'] / spec_norm_factor, flux_unc=spec['flux_unc'] / spec_norm_factor)
+    scale_peaks(params, 1 / spec_norm_factor)
+    self.cont_profs['flux0'] = {comp_name: comp_flux0 / spec_norm_factor for comp_name, comp_flux0 in self.cont_profs['flux0'].items()}
     # Spectral uncertainties in the fit's chi^2: the quoted ones plus a floor, a fraction SPEC_UNC_FLOOR of the observed flux,
     # in quadrature (0.01 for opt files without the option). check_fit_pars and the products keep the quoted ones
-    floor = self.inopts['FIT OPTIONS'].get('SPEC_UNC_FLOOR', 0.01)
-    spec_fit = dict(spec, flux_unc=np.sqrt(spec['flux_unc']**2 + (floor * spec['flux'])**2))
+    spec_unc_floor = self.inopts['FIT OPTIONS'].get('SPEC_UNC_FLOOR', 0.01)
+    spec_with_unc_floor = dict(spec, flux_unc=np.sqrt(spec['flux_unc']**2 + (spec_unc_floor * spec['flux'])**2))
     
     acceptFit = False
     ### Limit the number of times the fit can be rerun to avoid infinite loop
@@ -67,10 +67,10 @@ def cafe_grinder(self, params, spec, phot):
         # spectral sampling (2 channels per element) and dl half the distance between its neighbours (the full gap at the ends)
         R_0 = np.mean(spec['wave']) * (spec['wave'].size / 2) / (spec['wave'][-1] - spec['wave'][0])
         wave = np.concatenate((spec['wave'], phot['wave']))
-        s = np.argsort(wave)
-        dl = np.gradient(wave[s])[np.argsort(s)]
-        phot['weight'] = R_0 * dl[spec['wave'].size:] / phot['wave']
-        phot = dict(phot, flux=phot['flux'] / norm, flux_unc=phot['flux_unc'] / norm)
+        spec_phot_sort_idx = np.argsort(wave)
+        spec_phot_delta_wave = np.gradient(wave[spec_phot_sort_idx])[np.argsort(spec_phot_sort_idx)]
+        phot['weight'] = R_0 * spec_phot_delta_wave[spec['wave'].size:] / phot['wave']
+        phot = dict(phot, flux=phot['flux'] / spec_norm_factor, flux_unc=phot['flux_unc'] / spec_norm_factor)
     
     while acceptFit is False:
         
@@ -82,7 +82,7 @@ def cafe_grinder(self, params, spec, phot):
         ### Note that which fitting method is faster here is pretty uncertain, changes by target
         #method = 'leastsq'
         method = 'least_squares' #'nelder' if len(spec['wave']) >= 10000 else 'least_squares'
-        fitter = lm.Minimizer(chisquare, params, nan_policy='omit', fcn_args=(spec_fit, phot, self.cont_profs, show))
+        fitter = lm.Minimizer(chisquare, params, nan_policy='omit', fcn_args=(spec_with_unc_floor, phot, self.cont_profs, show))
         
         result = fitter.minimize(method=method, ftol=ftol, max_nfev=200*(len(params)+1))
 
@@ -128,8 +128,8 @@ def cafe_grinder(self, params, spec, phot):
                     print('Hit maximum number of refitting loops. The fitting was unsuccessful. Continuing to next spaxel (if any left)')
                 acceptFit = True
 
-    scale_peaks(result.params, norm)
-    self.cont_profs['flux0'] = {k: v * norm for k, v in self.cont_profs['flux0'].items()}
+    scale_peaks(result.params, spec_norm_factor)
+    self.cont_profs['flux0'] = {comp_name: comp_flux0 * spec_norm_factor for comp_name, comp_flux0 in self.cont_profs['flux0'].items()}
 
     return result
 
