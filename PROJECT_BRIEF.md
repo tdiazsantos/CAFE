@@ -215,10 +215,25 @@ Decided 2026-11-06 and corrected the same day. A new session follows step 4.
 
 Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milestone starts only after my approval** (CLAUDE.md §1). The CRETA aperture-correction path stays a separate item until the PSF cubes are found.
 
-### M4 — Fitting a JWST spectrum alone
+### M4 — Fitting a JWST spectrum alone *(approved 2026-11-16)*
 - Check that fitting a JWST spectrum alone works well, including the non-unique convergence.
 - **Important finding (logged 2026-11-15): the fit does not converge to a unique minimum.** In the tutorial fit (`476c6ef`), inputs that differ only by rounding (2×10⁻¹⁶) move STB_FLX by 3.7×, COO_TMP by 13% and the line/PAH peaks by ~5% (median), while a repeat is bit-identical (see "Biases", 2026-11-15).
   - Fit settings (`FTOL`, `MAX_LOOPS`, `FIT_CHK`, `max_nfev`, method) stay my decision (CLAUDE.md §4).
+- **Stage 1 plan** (approved 2026-11-16; see "Decisions"). `dev` @ `fa348d8` in `cafe-dev`, no code change. Tests in `tests/M4/` (work folder); they only record what lmfit returns. `PYTHONHASHSEED=0`. Every setup uses the shipped `default_opt.cafe` (FTOL 10⁻⁵, `SPEC_UNC_FLOOR` 0.01, `FIT_CHK` True, `MAX_LOOPS` 5, `FitPhot` False) and no photometry.
+  - R1 (AGN): the NGC7469 tutorial spectrum `NGC7469_SingleExt_r1.5as_MIRI.dat`, z = 0.0163, `inpars_jwst_miri_AGN.ini`; 129 parameters free at the start.
+  - R2 (starburst): NGC3256 nuc1, my extraction `my_notebooks/extractions/NGC3256_nuc1_SingleExt_r0.15as_cube.fits` (pre-sync folder; MIRI, 0.15″ cone), z = 0.009354, `inpars_jwst_miri_SB.ini`; 88 free at the start.
+  - S1 (known truth): R1's plain-fit model on R1's wavelengths, plus one realisation of Gaussian noise at the floored errors √(σ_quoted² + (0.01 F)²). Fitted with the quoted errors and R1's inpars and options, from the inpars' starting values.
+  - Each setup is fitted 10 times, with `read_spec(flux_scale = 1 + j·10⁻⁷)`, j = 0…9: inputs that differ only by rounding; j = 0 is the plain fit.
+  - Measured: how each fit stops; χ² with the floored and the quoted errors; the spread of every parameter, of the component fluxes over the observed range, of the PAH and line fluxes and of the model, against the fit's stderr; for S1, also against the truth. "The same fit" means Δχ² < 1 in the floored χ².
+  - Report: one short summary table per setup (stop reasons, χ² spread, spread of the key parameters and of the in-range component fluxes against their stderr, classification), with the details in a report file in the work folder. Then stop.
+  - Stage 2 (the cause, with diagnostic fit settings) and a NIRSpec + MIRI spectrum are decided after stage 1.
+- **Stage 1 done 2026-11-16.** Report: `reports/M4_stage1_2026-11-16.md` (work folder). All 31 fits (10 per setup, plus a repeat of R1 j = 0, bit-identical) wrote every product, and every last `minimize` stopped on `ftol`.
+  - The end points are not the same fit. In R1 and R2 only the best fit is within Δχ² < 1 of the best; the others end up to Δχ² = 1,300 (R1) and 3,100 (R2) above it. S1: up to 25.
+  - R1: no refits, all parameters free to the end, and the fits that run longer reach a lower χ² (rank correlation −0.98).
+  - R2: STB_FLX goes to 0 in every fit; lmfit then returns no error bars and the refit loop ends in different models (57–66 free); 3 fits end without error bars.
+  - The fit's stderr understates the spread (R1 up to 2.3×, R2 up to 59×).
+  - S1's truth is out of the fit's reach: `init_feats` dropped three of the truth's lines on S1's data (+811 in χ²), so S1 cannot show whether the optimiser reaches the minimum.
+  - Waiting for my review. Stage 2 not started.
 
 ### M5 — Fits with real photometry
 - Fits of a JWST spectrum together with real photometry. The fake-photometry setup is for functional checks only (CLAUDE.md §10).
@@ -505,6 +520,15 @@ cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBA
   - The "before" runs use the detached worktree `cmp/dev-before` in the work folder.
   - Result 2026-11-14 on `d7f07bb`, after the redo of commit 4: all 8 M3 tests pass (54 checks), and test 2de also in `cafe-legacy`. Smoke test: 18/18, the same output as group 1 (`logs/smoke_dev_M3g2b.txt`).
 
+**M4 stage 1** (work folder `tests/M4/`; setups in `m4_setups.py`; each fit single-threaded, `PYTHONHASHSEED=0`, `cafe-dev`, `dev` on `PYTHONPATH`; outputs in `out/<setup>/j<j>/`, logs in `logs/`)
+```
+cd /Users/tanio/pywork/cafe_work/tests/M4 && ./run_one.sh R1 0   # one fit: <setup> <j> [<run folder>]
+cd /Users/tanio/pywork/cafe_work/tests/M4 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python s1_make.py   # S1, after R1 j0
+cd /Users/tanio/pywork/cafe_work/tests/M4 && xargs -P 2 -L 1 ./run_one.sh < queue_stage1.txt   # the other 30 fits, with the repeat "R1 0 j0_repeat"
+cd /Users/tanio/pywork/cafe_work/scratch/m4_plan && env PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python ../../tests/M4/s1_line_check.py /Users/tanio/Sync/pywork/CAFE
+cd /Users/tanio/pywork/cafe_work/tests/M4 && ./m4_report.sh   # summary tables, figures and the report (with findings_stage1.md)
+```
+
 ## Decisions & biases
 All entries are dated. Record a decision only after I approve it. Log biases as soon as you notice them. List defaults that still need my OK under "Awaiting my OK".
 
@@ -784,6 +808,8 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-15: **Commit `2ae9cb4` approved. M3 complete.** Push `dev` to my fork, showing me first what it publishes.
 - 2026-11-15: **`dev` pushed** (`1926c7b`→`6b9136c`, the 10 commits shown to me). Attribution: commit attribution was turned on (PR attribution off) when I approved M3; CLAUDE.md §2 describes that state, and nothing for GOALS carries a Claude line.
 - 2026-11-15: **Milestone split; don't start M4 yet.** M4: fitting a JWST spectrum alone, including the non-unique convergence. M5: fits with real photometry. M6: cube-fit performance and parallelisation, including the fitting order (#6). M7: clean-up and packaging. The CRETA aperture-correction path stays a separate item until the PSF cubes are found. Each milestone starts only after my approval. Earlier entries that give cube-fit performance as M4 mean M6.
+- 2026-11-15: **`dev` pushed** (`6b9136c`→`fa348d8`, the 3 commits shown to me: the attribution text in CLAUDE.md §2, the record of the previous push, the milestone split).
+- 2026-11-16: **M4 approved**, with the plan's recommended choices: NGC3256 nuc1 from my existing extraction as the second real spectrum; rounding-level perturbations only; S1 noise at the floored errors; Δχ² < 1 in the floored χ² as "the same fit"; NIRSpec + MIRI decided after stage 1. Except: 10 fits per setup, not 20. The report starts with one short summary table per setup; the full details go in a report file in the work folder.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -890,7 +916,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-14: `cafeplot`'s residual panel uses the combined spectral + photometric arrays. So it joins the photometric residuals to the spectral ones with a line, and its ±4σ y-range includes them. Display only; seen in the M3 group 2 real fit. Not acted on.
 - 2026-11-14: The contcube `WAVE` table is float32 (since M1 item H7). In the tutorial spectrum, the sub-band overlaps hold wavelengths only 2×10⁻⁷ µm apart, which float32 cannot separate. So 179 adjacent `WAVE` entries are equal; the fit's float64 grid is strictly increasing. This was already in the fixture contcube, before group 2. Not acted on.
 - 2026-11-15: Spectral error floor: the parameters' uncertainties come from the fit, so they reflect the floored χ² (lmfit rescales the covariance by χ²/dof, `scale_covar=True`). That covers the parcube `STDERR` and the relative-error tests in `check_fit_pars` (`REL_ERR_*`); only its 0.5σ peak test uses the quoted spectral errors. Not acted on.
-- 2026-11-15: The line table's empty rows (lines not fitted) come out in a different order from run to run; the rows themselves are the same. Seen in the synthetic fits. Not acted on. *(Cause found 2026-11-15: `line_table` builds its list of lines with `list(set(...))` (`cafe_io.py:897`), so their order follows Python's per-process string hashing; the fitted rows are then in wavelength order, the empty ones are not. With `PYTHONHASHSEED` fixed, two runs give identical tables. Reproducibility only; for the clean-up.)*
+- 2026-11-15: The line table's empty rows (lines not fitted) come out in a different order from run to run; the rows themselves are the same. Seen in the synthetic fits. Not acted on. *(Cause found 2026-11-15: `line_table` builds its list of lines with `list(set(...))` (`cafe_io.py:897`), so their order follows Python's per-process string hashing; the fitted rows are then in wavelength order, the empty ones are not. With `PYTHONHASHSEED` fixed, two runs give identical tables. Reproducibility only; for the clean-up.)* *(2026-11-16, M4: the order also differed between fits with `PYTHONHASHSEED=0` when different lines ended at zero.)*
 - 2026-11-15: **The fit amplifies rounding-level differences in its inputs.** The tutorial fit (normalised, `476c6ef`) is bit-identical when repeated, but with inputs that differ only by rounding (2×10⁻¹⁶; flux_scale 1.0000001) it ends elsewhere: STB_FLX 3.7×, HOT_FLX 0.79×, COO_TMP +13%, STB_TAU −35%, line/PAH peaks 5.4% (median of 77; 24 differ by >10%), χ²/N 21,583 vs 21,880. So it does not converge to a unique minimum (FTOL = 10⁻⁵, degenerate components such as STB/HOT/COO, ~100 free parameters). Consequences: any change in floating-point order (code, library versions, machine) can move results by this much; regression-test tolerances must allow for it (my decision); and differences of this size between fits, such as those among the synthetic floor variants 0.75–3% in the optical depths, may be within this spread. Logged as an important finding for M4 (see M4); fit settings are my decision. Not acted on.
 - 2026-11-15: Two residual dependences on the source's flux level after the normalisation, both outside the fit: `init_feats` drops a line whose initial peak guess is below 10⁻¹⁰ Jy (an absolute threshold; only matters for sources that faint), and a spectrum whose median |flux| is 0 would divide by 0 (an all-zero spectrum). Neither seen in real data. Not acted on.
 - 2026-11-15: **CRETA's extracted fluxes and errors depend on the photutils version.** Same code (`5c7085a`) and NGC7469 cubes, `cafe-dev` (photutils 3.1.1) against `cafe-legacy` (1.10.0), from `g4_compare.py`:
@@ -898,3 +924,5 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Errors: 1.10 sums σ²·w over the aperture, 3.1.1 sums σ²·w² (w = the fraction of the pixel inside the aperture), so 3.1.1 gives smaller errors wherever partial pixels count. Errors, dev/legacy: grid 0.68–0.95 (median 0.85); single 0.89–0.99 (median 0.98). Which is right depends on how correlated the cube's pixels are (the cubes are resampled): a physics choice, mine to make.
   - Not acted on.
 - 2026-11-14: `CAFE_prof_generator` assumes the photometry is sorted by wavelength. It extends the model grid from `phot_dict['wave'][0]` and `[-1]`, and `read_phot` doesn't sort. With an unsorted photometry file, the grid may stop short of the bluest or reddest band. Not acted on. *(Logged as GOALS bug G1 the same day, with a failing case; see "GOALS bugs found after M2".)*
+- 2026-11-16: **`flux0` outside the spectrum's range: the docs and the code disagree.** `CAFE_prof_generator` sets each component's `flux0` with `np.interp` (`cafe_helper.py:1010`), which returns the end values outside the spectrum's range. So for a MIRI spectrum HOT, STR and STB (reference wavelengths 3.5, 1.6 and 2 µm) take the flux of the bluest channel (0.158 Jy for all three in the tutorial spectrum), and CIR and CLD (450 and 70 µm) that of the reddest. DESIGN.md ("Parameter naming") says `_FLX` is a ratio to the observed flux at the component's reference wavelength. The model is unaffected (only `_FLX` × `flux0` enters it), but those `_FLX` values rest on a single channel. Seen in M4. Not acted on.
+- 2026-11-16: **`init_feats`' line selection depends on the noise.** It leaves out lines whose guessed peak is negative. On M4's S1 (R1's fit plus 1% noise) it left out three lines the truth has ([Al VI] 9.12 µm, [Ar V] 13.10 µm, the broad Na VIII 5.18 µm component; peaks 1.4–6.7 mJy) and kept two the truth lacks. Not acted on.
