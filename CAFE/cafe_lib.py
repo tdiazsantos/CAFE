@@ -2009,22 +2009,13 @@ def check_fit_pars(
                     # acceptFit = False
                     # logFile.write(par + ' at lower bound\n')
 
-                    ### If a flux component hits the lower bound, need to also fix
-                    ### related parameters or they wind up in an infinite loop
-                    if par in ["CIR_FLX", "CLD_FLX"]:
-                        params[par[:3] + "_TMP"].vary = False
-                    if par in ["COO_FLX", "WRM_FLX", "HOT_FLX"]:
-                        params[par[:3] + "_TMP"].vary = False
-                        params[par[:3] + "_TAU"].vary = False
-                        params[par[:3] + "_MIX"].vary = False
-                        params[par[:3] + "_COV"].vary = False
-                    if par in ["STR_FLX", "STB_FLX"]:
-                        params[par[:3] + "_TAU"].vary = False
-                        params[par[:3] + "_MIX"].vary = False
-                        params[par[:3] + "_COV"].vary = False
-                    if par in ["DSK_FLX"]:  # DSK_MIX not exist
-                        params[par[:3] + "_TAU"].vary = False
-                        params[par[:3] + "_COV"].vary = False
+                    ### If a flux component hits the lower bound, the model drops the component, so its other parameters
+                    ### (TMP, TAU, MIX, COV, the starburst's ages) have no effect: fix them too, or they wind up in an
+                    ### infinite loop. The onion parameters are dealt with below
+                    if par.endswith("_FLX"):
+                        for comp_par in params:
+                            if comp_par.startswith(par[:4]) and comp_par not in ["HOT_WRM", "WRM_COO"]:
+                                params[comp_par].vary = False
 
                 # Check if the values didn't move from the initial value
                 if errors_exist is False:
