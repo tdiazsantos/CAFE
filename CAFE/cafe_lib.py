@@ -4,6 +4,7 @@ These functions are used by pyCAFE in fitting, but don't care about 1D/2D. Most 
 shouldn't need to be changed to alter how CAFE is doing its fitting
 """
 
+import re
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d, splrep, splev, RegularGridInterpolator
@@ -2009,14 +2010,6 @@ def check_fit_pars(
                     # acceptFit = False
                     # logFile.write(par + ' at lower bound\n')
 
-                    ### If a flux component hits the lower bound, the model drops the component, so its other parameters
-                    ### (TMP, TAU, MIX, COV, the starburst's ages) have no effect: fix them too, or they wind up in an
-                    ### infinite loop. The onion parameters are dealt with below
-                    if par.endswith("_FLX"):
-                        for comp_par in params:
-                            if comp_par.startswith(par[:4]) and comp_par not in ["HOT_WRM", "WRM_COO"]:
-                                params[comp_par].vary = False
-
                 # Check if the values didn't move from the initial value
                 if errors_exist is False:
                     if np.allclose(
@@ -2143,6 +2136,33 @@ def check_fit_pars(
                         params[par].vary = False
                         # acceptFit = False
                         # logFile.write(par + 'at initial value\n')
+
+    ### Fix the parameters that no longer affect the model, or the fit returns no errors.
+    ### The model drops a component whose flux is 0 (fix all its other parameters) and
+    ### skips the extinction of a component whose optical depth is 0 (fix its MIX and
+    ### COV). Keep free a parameter that another component's expression uses (WRM_TAU in
+    ### PAH_TAU = WRM_TAU). The onion parameters are dealt with above
+    for par in params:
+        component_dropped = (
+            par[:4] + "FLX" in params
+            and par != par[:4] + "FLX"
+            and params[par[:4] + "FLX"].value == 0
+        )
+        extinction_skipped = (
+            par[4:] in ["MIX", "COV"] and params[par[:4] + "TAU"].value == 0
+        )
+        if (
+            params[par].vary
+            and (component_dropped or extinction_skipped)
+            and par not in ["HOT_WRM", "WRM_COO"]
+        ):
+            used_by_other_component = any(
+                par in re.findall(r"\w+", other_par.expr)
+                for other_par in params.values()
+                if other_par.expr and not other_par.name.startswith(par[:4])
+            )
+            if not used_by_other_component:
+                params[par].vary = False
 
     ### If errors are calculated, run additional checks but accept the fit
     if errors_exist:
