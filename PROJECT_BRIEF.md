@@ -234,6 +234,10 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
   - The fit's stderr understates the spread (R1 up to 2.3×, R2 up to 59×).
   - S1's truth is out of the fit's reach: `init_feats` dropped three of the truth's lines on S1's data (+811 in χ²), so S1 cannot show whether the optimiser reaches the minimum.
   - Waiting for my review. Stage 2 not started.
+- **M4 order from here** (decided 2026-11-17; stop after each step):
+  1. The zero-flux freeze (see "Decisions", 2026-11-17), and a check whether opacity features need the same. Diff hunk by hunk with reason paragraphs and tests; wait for my approval.
+  2. From the stage 1 fits (no new runs): which `_FLX` ended at their 0 or 2 bounds, and how far each component's reference wavelength is from the observed range, so that I can decide whether the `flux0` fix comes before the stage 2 diagnostics.
+  3. Stage 2 (convergence diagnostics on R1 and R2) and the S1 rebuild.
 
 ### M5 — Fits with real photometry
 - Fits of a JWST spectrum together with real photometry. The fake-photometry setup is for functional checks only (CLAUDE.md §10).
@@ -810,6 +814,9 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-15: **Milestone split; don't start M4 yet.** M4: fitting a JWST spectrum alone, including the non-unique convergence. M5: fits with real photometry. M6: cube-fit performance and parallelisation, including the fitting order (#6). M7: clean-up and packaging. The CRETA aperture-correction path stays a separate item until the PSF cubes are found. Each milestone starts only after my approval. Earlier entries that give cube-fit performance as M4 mean M6.
 - 2026-11-15: **`dev` pushed** (`6b9136c`→`fa348d8`, the 3 commits shown to me: the attribution text in CLAUDE.md §2, the record of the previous push, the milestone split).
 - 2026-11-16: **M4 approved**, with the plan's recommended choices: NGC3256 nuc1 from my existing extraction as the second real spectrum; rounding-level perturbations only; S1 noise at the floored errors; Δχ² < 1 in the floored χ² as "the same fit"; NIRSpec + MIRI decided after stage 1. Except: 10 fits per setup, not 20. The report starts with one short summary table per setup; the full details go in a report file in the work folder.
+- 2026-11-17: **Brief update with the M4 stage 1 results committed** (`5777ff7`).
+- 2026-11-17: **Zero-flux freeze.** When a continuum component's `_FLX` reaches 0, its other parameters are fixed (TMP, TAU, MIX, COV, and the starburst's age parameters), as `check_fit_pars` already does for line and PAH peaks.
+- 2026-11-17: **The `flux0` mismatch is to be fixed** (see "Biases", 2026-11-16), including the 0–2 `_FLX` limit when a component's reference wavelength is outside the data. The design is still open.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
