@@ -868,12 +868,9 @@ def grain_totemissivity(wave, T_bb, fCarb=1.0, fSil=1.0, fCry=0., fEns=0.5, E_T=
         # Interpolate onto the temperature of the input source
         logtbb = log(T_bb)
         logET = log(E_T['t_bb'])
-        tdiff = np.abs(logET - logtbb)
-        arglow, arghigh = np.argsort(tdiff)[:2]
-        if arghigh < arglow:
-            tmp = arglow
-            arglow = arghigh
-            arghigh = tmp
+        # The two grid temperatures that bracket T_bb (outside the grid, the first two or the last two)
+        arghigh = min(max(np.searchsorted(logET, logtbb), 1), logET.size - 1)
+        arglow = arghigh - 1
 
         E_T_Sil = E_T['SilCont'][:,arglow:arghigh+1]
         j = fCarb * E_T['Carb'][:,arglow:arghigh+1] + \
