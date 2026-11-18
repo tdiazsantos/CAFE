@@ -1,6 +1,6 @@
 # CAFE — design notes
 
-This describes my fork's **`dev`** branch: GOALS-survey/CAFE `master` plus the M3 changes (2026-11-14 to 2026-11-15, up to `1fc4f5a`; listed at the end). The parts outside M3 come from a first read of GOALS `master` @ `39e298b`, not a full review. Keep it current as the code changes.
+This describes my fork's **`dev`** branch: GOALS-survey/CAFE `master` plus the M3 changes (2026-11-14 to 2026-11-15, up to `1fc4f5a`) and the M4 changes (2026-11-16 to 2026-11-18, up to `c071ab1`), both listed at the end. The parts outside M3 come from a first read of GOALS `master` @ `39e298b`, not a full review. Keep it current as the code changes.
 
 ## What the code does
 CAFE (Continuum And Feature Extraction) decomposes infrared spectra into physical components by least-squares fitting with lmfit. The inputs are JWST NIRSpec and MIRI or Spitzer IRS spectra, optionally with photometry. The components are:
@@ -39,6 +39,7 @@ The repo contains two packages:
     - ASDF output.
 - `component_model.py`: feature profiles. Drude for PAHs, Gauss for lines, and integrated Drude fluxes.
 - `dustgrainfunc.py`: dust-grain emissivities.
+  - `grain_totemissivity` interpolates log j linearly in log T between the two grid temperatures that bracket T, or between the first two or the last two outside the grid (M4, G14). With `FASTTEMP` (False in the shipped opt files) it takes the nearest grid temperature instead.
 - `sourceSED.py`: heating-source SEDs (ISRF, AGN, starburst from SB99), the Planck function and the opacity loader.
 - `get_fit_sequence.py`: decides the order in which spaxels are fitted, and which already-fitted neighbour initialises each one.
 - `mathfunc.py`: small helpers that duplicate `spline` and `intTab` in cafe_lib.
@@ -70,6 +71,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
 - `[MODULES & TABLES]`, which includes `RESOLUTIONS` (instrument resolving-power tables)
 - `[PAH & LINE OPTIONS]`
 - `[CONTINUA INITIAL VALUES AND OPTIONS]`. Each line is `value, vary[, min, max[, expr]]`.
+  - The dust temperatures have non-overlapping ranges (M4), which keep the components in order: COO 3–50 K, WRM 50–200 K, HOT 200–1027.2 K. This holds in every shipped inpars file except `inpars_jwst_miri_IIZw096.ini`.
 
 **inopts (`.cafe`)** has these sections:
 - `[PATHS]`
@@ -111,6 +113,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
 2. **`read_phot(...)`**: optional. Sorts the points by wavelength (M3).
 3. **`fit_spec(inparfile, optfile)`**
    1. `mask_spec` produces `spec_dict` with `wave`, `flux`, `flux_unc` and `weight`.
+      - It drops the channels flagged in the DQ mask, NaN channels, channels more than 1000 × the MAD-based σ above the median, and channels with flux < 0 (see the brief, "Biases", 2026-11-18).
    2. `CAFE_param_generator.make_parobj(get_all=True)` sets the parcube layout. `make_parobj()` then builds the parameters actually fitted.
    3. `CAFE_prof_generator.make_cont_profs()` builds `cont_profs`, which holds:
       - `waveMod`, `wave0` and `flux0`;
@@ -126,6 +129,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
         - R₀ comes from the spectral sampling: the mean wavelength times half the number of channels, over the wavelength range (2 channels per resolution element).
         - Δλ is half the distance between the point's two neighbours in the combined spectral + photometric wavelength list (`np.gradient`), or the full gap to its one neighbour at either end.
       - `check_fit_pars` then accepts the fit or asks for a refit.
+        - It also fixes every free parameter that no longer affects the model, since lmfit returns no error bars while such a parameter is free (M4). These are all other parameters of a component whose `_FLX` is 0, and the `MIX` and `COV` of a component whose `_TAU` is 0. A parameter that another component's expression uses stays free (`WRM_TAU` in `PAH_TAU = WRM_TAU`). The onion ratios `HOT_WRM` and `WRM_COO` have their own check before it.
       - On a refit, the scaling parameters (`Peak`, `FLX`, `TMP`, `TAU`, `RAT`) are perturbed by 1% and the fit is repeated, up to `MAX_LOOPS` times.
    5. `parobj2parcube` stores the results. `get_model_fluxes(comps=True)` gives the component spectra. `CompFluxes_0` includes `fFTS0`, the intrinsic PAHs plus lines (M3).
    6. `save_products` writes the outputs.
@@ -158,6 +162,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
    - `NPROC` is read in `cafe_grinder` but never used.
    - The neighbour initialisation creates a dependency between spaxels. Any parallel scheme must either keep each spaxel's initialisation source, or count as a change in results.
    - `least_squares` estimates the Jacobian numerically, so the cost is about (npar+1) evaluations of `get_model_fluxes` per iteration, times the number of refit loops.
+   - The end point moves with rounding-level input differences. The M4 baseline (the brief, M4 step 7) measures this spread for R1 and R2, the reference for any M6 change.
 
 ## CRETA extraction and stitching
 Both extractions read their parameters from the parameter file (`single_params.txt`, `grid_params.txt` or the user's copy). `parameter_file=False` raises a `ValueError` (M3, G5).
@@ -209,3 +214,10 @@ My local changes brought in, and the GOALS bugs fixed on `dev` along the way (G 
 - `744dc2a` (G9): the grid measures the PSF cubes with the data's aperture, `r_ap`.
 - `8177bb6` (G5): `parameter_file=False` raises a `ValueError`; the keyword-only path is removed.
 - `1fc4f5a` (G12): the single extraction's metadata records the background annulus from the parameter file.
+
+## M4 changes on `dev` (2026-11-16 to 2026-11-18)
+Each is described above, where it applies.
+- `672749d` (replaces `d6bd782`): `check_fit_pars` fixes the parameters that no longer affect the model.
+- `93a90dc` (G14): `grain_totemissivity` interpolates between the grid temperatures that bracket T.
+- `4ab23ea`: non-overlapping dust temperature ranges in the shipped inpars files except IIZw096; COO starts at 40 K in the two AGN files.
+- `c071ab1`: `flux0` is the median of the 20 channels around the reference wavelength.
