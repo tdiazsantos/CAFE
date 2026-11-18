@@ -1004,18 +1004,14 @@ class CAFE_prof_generator:
             
         # flux0
         # -----
-        # Read in reference wavelengths, then get the measured flux at each of those wavelengths
-        # Note np.interp does one-dimensional linear interpolation for monotonically 
-        # increasing sample points.    
-        flux0 = {'CIR':np.interp(np.log(wave0['CIR']), np.log(wave), flux),
-                 'CLD':np.interp(np.log(wave0['CLD']), np.log(wave), flux),
-                 'COO':np.interp(np.log(wave0['COO']), np.log(wave), flux),
-                 'WRM':np.interp(np.log(wave0['WRM']), np.log(wave), flux),
-                 'HOT':np.interp(np.log(wave0['HOT']), np.log(wave), flux),
-                 'STR':np.interp(np.log(wave0['STR']), np.log(wave), flux),
-                 'STB':np.interp(np.log(wave0['STB']), np.log(wave), flux),
-                 'DSK':np.interp(np.log(wave0['DSK']), np.log(wave), flux),
-                 'PAH':np.interp(np.log(wave0['PAH']), np.log(wave), flux)}
+        # The median flux of the n_flux0_channels channels around each reference wavelength (half below it, half at or above
+        # it), or of the first or the last n_flux0_channels where it lies near or beyond an edge of the data, so that the noise
+        # of one channel does not set the scale of the component's _FLX
+        n_flux0_channels = 20
+        flux0 = {}
+        for comp_name in ['CIR', 'CLD', 'COO', 'WRM', 'HOT', 'STR', 'STB', 'DSK', 'PAH']:
+            first_channel = min(max(np.searchsorted(wave, wave0[comp_name]) - n_flux0_channels // 2, 0), wave.size - n_flux0_channels)
+            flux0[comp_name] = np.median(flux[first_channel:first_channel + n_flux0_channels])
         
         # =================
         # Grain emissivity

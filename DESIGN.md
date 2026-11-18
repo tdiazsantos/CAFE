@@ -91,7 +91,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
     - PAH continuum scaling: `PAH`.
   - `QTY` is `FLX`, `TMP`, `TAU`, `MIX` or `COV`.
   - There are a few others, e.g. `STB_100`, `STB_010`, `HOT_WRM`, `WRM_COO`. See `make_cont_pars`.
-  - `_FLX` is a **ratio to the observed flux at the component's reference wavelength** (`flux0`), not an absolute flux.
+  - `_FLX` is a **ratio to the observed flux at the component's reference wavelength** (`flux0`: the median of the 20 channels around it, or of the first or last 20 where it lies near or beyond an edge of the data), not an absolute flux.
 - **Absorption:** `ICE3_TAU`, `ICE6_TAU`, `CO2_TAU`, `HAC_TAU`, `CORV_TAU`, `CRYSI_233_TAU`.
 - **Features:**
   - lines: `g_<name><comp>_{Wave,Gamma,Peak}`;
@@ -154,7 +154,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
       - `parobj2parcube` stores the result.
    5. Writes the parcube FITS and the `_fitpars.ini` of the first (highest-"SNR") spaxel.
 3. **Facts relevant to performance:**
-   - Tables are read and profiles rebuilt for every spaxel. Only `flux0`, the observed flux at the reference wavelengths, really depends on the spaxel.
+   - Tables are read and profiles rebuilt for every spaxel. Only `flux0`, the observed flux around the reference wavelengths, really depends on the spaxel.
    - `NPROC` is read in `cafe_grinder` but never used.
    - The neighbour initialisation creates a dependency between spaxels. Any parallel scheme must either keep each spaxel's initialisation source, or count as a change in results.
    - `least_squares` estimates the Jacobian numerically, so the cost is about (npar+1) evaluations of `get_model_fluxes` per iteration, times the number of refit loops.
