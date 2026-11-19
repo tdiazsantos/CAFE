@@ -1,6 +1,6 @@
 # CAFE — design notes
 
-This describes my fork's **`dev`** branch: GOALS-survey/CAFE `master` plus the M3 changes (2026-11-14 to 2026-11-15, up to `1fc4f5a`) and the M4 changes (2026-11-16 to 2026-11-18, up to `c071ab1`), both listed at the end. The parts outside M3 come from a first read of GOALS `master` @ `39e298b`, not a full review. Keep it current as the code changes.
+This describes my fork's **`dev`** branch: GOALS-survey/CAFE `master` plus the M3 changes (2026-11-14 to 2026-11-15, up to `1fc4f5a`), the M4 changes (2026-11-16 to 2026-11-18, up to `c071ab1`) and the changes after M4 (2026-11-19, up to `5e70c62`), all listed at the end. The parts outside M3 come from a first read of GOALS `master` @ `39e298b`, not a full review. Keep it current as the code changes.
 
 ## What the code does
 CAFE (Continuum And Feature Extraction) decomposes infrared spectra into physical components by least-squares fitting with lmfit. The inputs are JWST NIRSpec and MIRI or Spitzer IRS spectra, optionally with photometry. The components are:
@@ -113,8 +113,9 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
 2. **`read_phot(...)`**: optional. Sorts the points by wavelength (M3).
 3. **`fit_spec(inparfile, optfile)`**
    1. `mask_spec` produces `spec_dict` with `wave`, `flux`, `flux_unc` and `weight`.
-      - It drops the channels flagged in the DQ mask, NaN channels, channels more than 1000 × the MAD-based σ above the median, and channels with flux < 0 (see the brief, "Biases", 2026-11-18).
+      - It drops the channels flagged in the DQ mask, NaN channels and channels more than 1000 × the MAD-based σ above the median. It keeps channels with flux < 0 (G15).
    2. `CAFE_param_generator.make_parobj(get_all=True)` sets the parcube layout. `make_parobj()` then builds the parameters actually fitted.
+      - Its `init_feats` keeps a line when its estimated peak is ≥ 10⁻¹⁰ Jy (`force_all_lines` keeps every line). The estimate is the least-squares amplitude of the line's Gaussian profile (the instrument's FWHM) over the channels within 1 FWHM of λ₀, above a continuum: the mean of the medians, on each side, of the nearest 5 channels beyond 2 FWHM that are not within 1 FWHM of another candidate line. It runs three passes, each on the data minus the lines estimated so far, and the starting peaks are twice the estimate.
    3. `CAFE_prof_generator.make_cont_profs()` builds `cont_profs`, which holds:
       - `waveMod`, `wave0` and `flux0`;
       - grain emissivities and opacities;
@@ -221,3 +222,8 @@ Each is described above, where it applies.
 - `93a90dc` (G14): `grain_totemissivity` interpolates between the grid temperatures that bracket T.
 - `4ab23ea`: non-overlapping dust temperature ranges in the shipped inpars files except IIZw096; COO starts at 40 K in the two AGN files.
 - `c071ab1`: `flux0` is the median of the 20 channels around the reference wavelength.
+
+## Changes after M4 on `dev` (2026-11-19)
+Each is described above, where it applies.
+- `3fd7e7e` (G15): `mask_spec` keeps channels with flux < 0.
+- `5e70c62`: `init_feats` estimates a line's peak from its Gaussian profile over the channels within 1 FWHM, above a continuum that avoids the other candidate lines.
