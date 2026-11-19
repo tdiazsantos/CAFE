@@ -242,18 +242,33 @@ class CAFE_param_generator:
         # Calculate peaks
         # --------------------------
         # fwhm = gam*wave0
-        # We estimate the underlying continuum under the lines at 2x the resolution (FWHM) of the instrument
+        # A line's peak is the least-squares amplitude of its Gaussian profile (the instrument's FWHM) over the channels
+        # within 1 FWHM of wave0, above the continuum. The continuum is the mean of the medians, on each side, of the
+        # nearest n_cont_channels channels beyond 2 FWHM that are not within 1 FWHM of another line (one side at the data's edge)
         peaks = np.zeros(wave0.shape)
         if get_all == False:
-            waveMinMax = [wave0 * (1. - 2.*gam), wave0 * (1. + 2.*gam)]
-        
+            inst_fwhm = gam * wave0
+            n_cont_channels = 5
+            in_line_window = np.abs(wave[np.newaxis, :] - wave0[:, np.newaxis]) <= inst_fwhm[:, np.newaxis]
+            n_lines_on_channel = in_line_window.sum(axis=0)
+            line_channels, line_profiles, cont_channels = [], [], []
+            for line_index in range(wave0.size):
+                free_of_other_lines = n_lines_on_channel - in_line_window[line_index] == 0
+                left_channels = np.flatnonzero(free_of_other_lines & (wave < wave0[line_index] - 2. * inst_fwhm[line_index]))[-n_cont_channels:]
+                right_channels = np.flatnonzero(free_of_other_lines & (wave > wave0[line_index] + 2. * inst_fwhm[line_index]))[:n_cont_channels]
+                cont_channels.append([side for side in (left_channels, right_channels) if side.size > 0])
+                line_channels.append(np.flatnonzero(in_line_window[line_index]))
+                line_profiles.append(np.exp(-0.5 * ((wave[line_channels[-1]] - wave0[line_index]) / (inst_fwhm[line_index] / 2.35482)) ** 2))
+
             # Identify gauss features that are absent and set their peak to 0
             nrep = 3
             featflux = np.copy(flux)
             for i in range(nrep):
-                fluxMinMax = np.interp(waveMinMax, wave, featflux) # linear interpolation at waveMinMax
-                cont = 0.5 * (fluxMinMax[0] + fluxMinMax[1])
-                peak = np.interp(wave0, wave, featflux) - cont
+                peak = np.zeros(wave0.shape)
+                for line_index in range(wave0.size):
+                    if line_profiles[line_index].size > 0:
+                        cont = np.mean([np.median(featflux[side]) for side in cont_channels[line_index]])
+                        peak[line_index] = np.sum(line_profiles[line_index] * (featflux[line_channels[line_index]] - cont)) / np.sum(line_profiles[line_index] ** 2)
                 peaks += peak
                 #featflux -= gauss_prof(wave, gauss['wave'], gauss['gam'], gauss['peak'])
                 featflux -= gauss_prof(wave, [wave0, gam, peak])
