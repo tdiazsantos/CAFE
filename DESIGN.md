@@ -1,6 +1,6 @@
 # CAFE — design notes
 
-This describes my fork's **`dev`** branch: GOALS-survey/CAFE `master` plus the M3 changes (2026-11-14 to 2026-11-15, up to `1fc4f5a`), the M4 changes (2026-11-16 to 2026-11-18, up to `c071ab1`) and the changes after M4 (2026-11-19, up to `5e70c62`), all listed at the end. The parts outside M3 come from a first read of GOALS `master` @ `39e298b`, not a full review. Keep it current as the code changes.
+This describes my fork's **`dev`** branch: GOALS-survey/CAFE `master` plus the M3 changes (2026-11-14 to 2026-11-15, up to `1fc4f5a`), the M4 changes (2026-11-16 to 2026-11-18, up to `c071ab1`) and the changes after M4 (2026-11-19, up to `688a02a`), all listed at the end. The parts outside M3 come from a first read of GOALS `master` @ `39e298b`, not a full review. Keep it current as the code changes.
 
 ## What the code does
 CAFE (Continuum And Feature Extraction) decomposes infrared spectra into physical components by least-squares fitting with lmfit. The inputs are JWST NIRSpec and MIRI or Spitzer IRS spectra, optionally with photometry. The components are:
@@ -93,7 +93,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
     - PAH continuum scaling: `PAH`.
   - `QTY` is `FLX`, `TMP`, `TAU`, `MIX` or `COV`.
   - There are a few others, e.g. `STB_100`, `STB_010`, `HOT_WRM`, `WRM_COO`. See `make_cont_pars`.
-  - `_FLX` is a **ratio to the observed flux at the component's reference wavelength** (`flux0`: the median of the 20 channels around it, or of the first or last 20 where it lies near or beyond an edge of the data), not an absolute flux.
+  - `_FLX` is a **ratio to the observed flux at the component's reference wavelength** (`flux0`: the median |flux| of the 20 channels around it, or of the first or last 20 where it lies near or beyond an edge of the data), not an absolute flux.
 - **Absorption:** `ICE3_TAU`, `ICE6_TAU`, `CO2_TAU`, `HAC_TAU`, `CORV_TAU`, `CRYSI_233_TAU`.
 - **Features:**
   - lines: `g_<name><comp>_{Wave,Gamma,Peak}`;
@@ -227,3 +227,4 @@ Each is described above, where it applies.
 Each is described above, where it applies.
 - `3fd7e7e` (G15): `mask_spec` keeps channels with flux < 0.
 - `5e70c62`: `init_feats` estimates a line's peak from its Gaussian profile over the channels within 1 FWHM, above a continuum that avoids the other candidate lines.
+- `688a02a`: `flux0` is the median |flux| of its 20 channels, so channels < 0 cannot make it ≤ 0.
