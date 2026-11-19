@@ -1019,14 +1019,14 @@ class CAFE_prof_generator:
             
         # flux0
         # -----
-        # The median flux of the n_flux0_channels channels around each reference wavelength (half below it, half at or above
+        # The median |flux| of the n_flux0_channels channels around each reference wavelength (half below it, half at or above
         # it), or of the first or the last n_flux0_channels where it lies near or beyond an edge of the data, so that the noise
-        # of one channel does not set the scale of the component's _FLX
+        # of one channel does not set the scale of the component's _FLX, and channels below 0 do not make it <= 0
         n_flux0_channels = 20
         flux0 = {}
         for comp_name in ['CIR', 'CLD', 'COO', 'WRM', 'HOT', 'STR', 'STB', 'DSK', 'PAH']:
             first_channel = min(max(np.searchsorted(wave, wave0[comp_name]) - n_flux0_channels // 2, 0), wave.size - n_flux0_channels)
-            flux0[comp_name] = np.median(flux[first_channel:first_channel + n_flux0_channels])
+            flux0[comp_name] = np.median(np.abs(flux[first_channel:first_channel + n_flux0_channels]))
         
         # =================
         # Grain emissivity
