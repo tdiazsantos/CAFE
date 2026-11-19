@@ -281,10 +281,44 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
      - R2: 8 of 10 within Δχ² 26 of the best (288,938.07; 3 within 2.1), every key dust parameter within 0.2%, model 0.006 of the floored error per channel (median); 146–174 below stage 3's plain fits. **2 of 10 (j = 1, 8) end 450,295 higher, with WRM_TMP at its 50 K lower bound and COO_TMP 48.3 K** (WRM_TAU 26.9, HOT 217 K); see "Biases", 2026-11-18.
      - Times (information; the machine also ran 8 Cloudy jobs, so not a timing baseline): R1 5.5–18.2 min, R2 6.6–9.2 min per fit.
 
-### M5 — Fits with real photometry
+### M5 — Fits with real photometry *(approved 2026-11-19)*
 - Fits of a JWST spectrum together with real photometry. The fake-photometry setup is for functional checks only (CLAUDE.md §10).
 - Refit, with the G14 fix (`93a90dc`), my pre-sync fits that have a temperature on a G14 jump: 51 of 121 distinct fits, CLD_TMP at 6.351 K in 42 of the 91 with CLD free, mostly the CYGNUS fits (logged 2026-11-18; see "Biases", G14).
 - **The HOT–STB degeneracy** (decided 2026-11-19): goes here, with near-IR photometry, and to a NIRSpec + MIRI spectrum of NGC7469 (see "Later").
+- **Step 1 (approved 2026-11-19): NGC7469 NIRSpec + MIRI with CRETA's single extraction** (see "Decisions"). *(Done 2026-11-19, waiting for my review; no fits. Work folder: `tests/M5/`, `extractions/NGC7469_NIRSpec+MIRI/`.)*
+  - **Data** (read only):
+    - NIRSpec, `nirspec/ifu/data/NGC7469/`: G140H/F100LP, G235H/F170LP and G395H/F290LP (`jw01328-o018_t010_nirspec_<grating>_s3d`).
+      - Pipeline 1.8.3.dev70, CRDS `jwst_1027.pmap`, written 2022-12-30, observed 2022-07-19; 0.1″ pixels.
+      - Two versions: `20221229/` and `20230110/…_wcsfix`. They differ only in CRPIX1 (28 → 23, 0.5″); the data and the ASDF WCS are identical. The two zips hold the `wcsfix` cubes.
+    - MIRI, `miri/mrs/data/NGC7469/`: the 12 GOALS HLSP v2.0 cubes (ch1–4, short/medium/long).
+      - Pipeline 1.7.2, CRDS `jwst_0963.pmap`, written 2022-09-22, observed 2022-07-04.
+      - Byte-identical to `new_wavelength_solution_and_wcs_20230331.zip`. `NGC7469_old/` holds older versions.
+  - **CRETA can do it as asked:**
+    - `cubes` may mix gratings and MIRI bands, and stitching works on any pair of adjacent bands that overlap (G395H and ch1-short overlap at 4.90–5.28 µm).
+    - It centres once, at `lambda_cent`, and uses that sky position in every cube.
+    - `point_source = False` gives the same radius at every wavelength; `aperture_correction = False`; `stitch_band = ch1-short`.
+    - It needs every cube in one folder, matched by name, so the work folder has symlinks (`data/NGC7469/cubes_nirspec_wcsfix+miri/`).
+  - **My choices, awaiting my OK:**
+    - the `wcsfix` NIRSpec cubes;
+    - all three gratings;
+    - centring at 5.4 µm, which falls in ch1-short (MIRI's WCS), from the start 23h03m15.614s +08d52m26.09s of `CRETA/param_files/NGC7469_MIRI_single_params.txt`.
+  - **Centring.** CRETA put the nucleus at 23h03m15.6110s +08d52m26.079s.
+    - From the same start, CRETA's centring in each instrument puts NIRSpec's nucleus 0.19–0.20″ from MIRI's with the `wcsfix` cubes (0.16″ E, 0.11″ N), and 0.60″ with the December 2022 ones.
+    - Within MIRI it is at most 0.09″ (ch4).
+    - Moving the 1.5″ aperture by those 0.19″ changes its flux by at most 0.4% in every cube tested (1.25–12 µm).
+  - **Result:** 20,714 channels, 0.966–28.603 µm (observed).
+    - NaN in about 305 channels per grating (detector gaps and flagged pixels, which CRETA's aperture sum turns into NaN) and in 3 MIRI channels.
+    - CRETA's warning that the three NIRSpec bands "contain all NaNs" is false: it looks only at each band's first plane (see "Biases").
+  - **Stitching ratios** (next band / this band over their overlap):
+    - within NIRSpec: G235H/G140H 0.984, G395H/G235H 0.974;
+    - **the NIRSpec–MIRI join: ch1-short/G395H 1.180**;
+    - within MIRI: 0.954–1.036.
+    - Factors to the ch1-short level: NIRSpec × 1.130, 1.148, 1.180; MIRI × 1.04–1.20 (ch4-long × 1.154).
+  - **Against R1** (median per band, outside the overlaps):
+    - Stitched new / R1 is 1.1544–1.1556 in every MIRI band and in R1's G395H channels. R1 is the same extraction stitched to ch4-long, the CRETA default, and the new one reproduces it to 0.1% apart from the reference band.
+    - Unstitched new / R1 runs from 1.155 (ch1-short) to 0.97–1.01 (ch3–ch4).
+  - **Against reg1** (shape only; both divided by their median over 2.83–28.1 µm rest): new / reg1 is 1.3–1.7 at 2.8–5.6 µm and falls to 0.26 at 24–28 µm. Below 1 where reg1's PAHs are stronger (7.4–8.6, 11.4–13.3 µm), and about 1.5 in reg1's silicate absorption.
+    - reg1 is a much redder, PAH-stronger region than the 1.5″ nucleus, so it is not a stand-in for it.
 
 ### M6 — Cube-fit performance and parallelisation
 - **First item (logged 2026-11-19): R2's fits at the 50 K wall.** In the M4 baseline, 2 of 10 R2 plain fits ended at the 50 K wall between the COO and WRM ranges (WRM_TMP at its lower bound, COO_TMP 48.3 K), with χ² 2.6× the best (see "Biases", 2026-11-18). M6's cube fits will show how often this happens. The candidate remedy is the ratio constraint on the dust temperatures under "Later".
@@ -618,6 +652,10 @@ cd /Users/tanio/Sync/pywork/CAFE && W=/Users/tanio/pywork/cafe_work && git archi
 cd /Users/tanio/pywork/cafe_work/tests/flux0_abs && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_flux0abs ~/miniforge3/envs/cafe-dev/bin/python faint_make.py /Users/tanio/pywork/cafe_work/cmp/dev_flux0abs > logs/faint_make.txt   # flux0: faint spectra with known components (inputs/)
 cd /Users/tanio/pywork/cafe_work/tests/flux0_abs && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_flux0abs ~/miniforge3/envs/cafe-dev/bin/python test_flux0_abs.py > logs/test_flux0_abs.txt   # flux0: bit-identity and flux0 > 0, no fit
 cd /Users/tanio/pywork/cafe_work/tests/flux0_abs && xargs -P 3 -L 1 ./run_fit.sh < queue.txt && ~/miniforge3/envs/cafe-dev/bin/python faint_summary.py > logs/faint_summary.txt   # flux0: faint CAFE fits before/after (out/<before|after>/seed<k>)
+cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python centring_check.py > logs/centring_check.txt   # M5: nucleus position per cube with CRETA's centring (both NIRSpec WCS versions)
+cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python coverage_check.py > logs/coverage_check.txt && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python offset_effect.py > logs/offset_effect.txt   # M5: 1.5" aperture coverage, and the flux change for the 0.19" offset
+cd /Users/tanio/pywork/cafe_work && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python tests/M5/extract.py > tests/M5/logs/extract.txt   # M5: CRETA NIRSpec+MIRI single extraction (params in tests/M5/params/; cubes symlinked in data/NGC7469/cubes_nirspec_wcsfix+miri/)
+cd /Users/tanio/pywork/cafe_work/tests/M5 && ~/miniforge3/envs/cafe-dev/bin/python compare.py > logs/compare.txt   # M5: stitching ratios, new vs R1 per band, new vs reg1 shape, plot
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
 
@@ -935,6 +973,19 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-19: **Commit `688a02a` (`flux0` = median |flux|) approved.** In the faint test, "recovered" means within 2 stderr of the truth, for the components whose stderr is smaller than their flux. COO passes.
   - Logged: `NGC7469_NIRSpec+MIRI_reg1_04arcsec.dat` is in the rest frame (read it with z = 0), and `script/NIRSpec-MIRI_spec_script.py` reads it with z = 0.0163.
   - Commit the brief, show what a push of `dev` to my fork would publish, and stop.
+- 2026-11-19: **Push of `dev` to my fork approved** (`84dc4c1`→`9b381cd`).
+- 2026-11-19: **M5 approved.** First step: the NGC7469 NIRSpec + MIRI spectrum, with CRETA only (its single extraction and parameter files; no custom extraction code).
+  1. Check that the NIRSpec and MIRI data folders can be read, and list the NGC7469 cubes in each (gratings, channels and bands, file names, pipeline version, date).
+  2. Find out whether CRETA can take NIRSpec and MIRI cubes in one single extraction and stitch across the two instruments.
+     - If it can, extract into the work folder with these settings:
+       - centre on the nucleus with CRETA's centring, at the same sky position for every cube;
+       - radius 1.5″ in every cube, as R1;
+       - no aperture correction;
+       - stitching reference band MIRI ch1-short.
+     - If CRETA can't do any of these as stated, stop and tell me before extracting.
+     - Then show the stitching ratios between bands and at the NIRSpec–MIRI join. Compare the new spectrum with R1 (the MIRI part, ratio per band) and with reg1 (read with z = 0; shape only, normalised, since the apertures differ).
+     - If it can't: don't extract. The NIRSpec + MIRI spectrum is then reg1 (read with z = 0); tell me what CRETA would need to combine the two instruments.
+  3. Report and stop; no fits yet.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1091,6 +1142,14 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Where the 20 channels are > 0 nothing changes. Elsewhere the start and the limit can only rise, since median |F| ≥ median F.
   - Only the start and the limit change, not the model. Not acted on.
 - 2026-11-19: **`script/NIRSpec-MIRI_spec_script.py` (pre-sync folder, July 2023) reads `NGC7469_NIRSpec+MIRI_reg1_04arcsec.dat` with z = 0.0163, but the file is in the rest frame** (read it with z = 0; see "Later", NIRSpec + MIRI). The path is commented out in the script, so only a run that restores it is affected. Logged, not acted on (the pre-sync folder is read only).
+- 2026-11-19: **R1 holds NIRSpec channels** (M5 step 1). The tutorial spectrum `NGC7469_SingleExt_r1.5as_MIRI.dat` contains 471 G395H channels at 4.957–5.270 µm (observed), interleaved with ch1-short's, stitched with the same chain. It was cut from a G395H + MIRI extraction at 4.957 µm.
+  - In M4 these channels were fitted with `inpars_jwst_miri_AGN.ini`, so the line profiles there used MIRI ch1's resolving power instead of G395H's.
+  - Not acted on.
+- 2026-11-19: **The stitching reference sets the absolute flux level** (M5 step 1). In NGC7469's 1.5″ extraction the MIRI band-to-band ratios multiply to 0.87 from ch1-short to ch4-long. So stitching to ch1-short puts every MIRI band 15.4% above R1 (stitched to ch4-long), and the NIRSpec bands 13–18% above their own calibration.
+  - With photometry (M5) the absolute level matters; which band, if any, is right is not known.
+  - The NIRSpec–MIRI join (1.18 at 4.90–5.28 µm) is a level difference between the two instruments' reductions: the aperture, at one sky position, changes it by ≤ 0.4%. Not acted on.
+- 2026-11-19: **NIRSpec's and MIRI's WCS place NGC7469's nucleus 0.19″ apart** (the `wcsfix` NIRSpec cubes; 0.60″ with the December 2022 ones), measured with CRETA's centring. For a 1.5″ aperture this changes the flux by ≤ 0.4%; for small apertures it would matter. Not acted on.
+- 2026-11-19: **CRETA's "contains all NaNs" warning in `singleExtraction` checks only the first plane of each band** (`final_apers` holds plane 0 of each band). It fires for bands whose first plane is NaN; NGC7469's three NIRSpec bands are 92% valid. For the clean-up list.
 - 2026-11-17: **The cool and warm dust components can swap temperatures**: both TMP bounds are [0, ∞) in the shipped inpars, with no order between them. In R2 (M4 stage 2), 7 of 10 stage 1 fits end with COO at 59.4 K and WRM at 29.5 K, about 3,000 higher in χ² than the other state, because `PAH_TAU = WRM_TAU` makes the two labellings differ. Not acted on (see "Awaiting my OK").
 - 2026-11-17: **The restart test in M4 stage 2 (stop when a restart lowers χ² by < 1) ended R1's chains while they were still falling ~2 per restart.** A diagnostic setting only; R1's minimum along the valley is not reached.
 - 2026-11-17: **Line components at their lower bound stay there.** In R2, the end points within the better minimum differ by which narrow or broad component of H I Humphreys 9–6 (5.91 µm) and 7–6 (12.37 µm) sits at 0; restarts don't bring it back. TRF's step shrinks for parameters near a bound, which may hold them there (not tested). Not acted on.
