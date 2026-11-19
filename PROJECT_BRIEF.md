@@ -298,7 +298,7 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
     - It centres once, at `lambda_cent`, and uses that sky position in every cube.
     - `point_source = False` gives the same radius at every wavelength; `aperture_correction = False`; `stitch_band = ch1-short`.
     - It needs every cube in one folder, matched by name, so the work folder has symlinks (`data/NGC7469/cubes_nirspec_wcsfix+miri/`).
-  - **My choices, awaiting my OK:**
+  - **My choices** *(approved 2026-11-19)*:
     - the `wcsfix` NIRSpec cubes;
     - all three gratings;
     - centring at 5.4 µm, which falls in ch1-short (MIRI's WCS), from the start 23h03m15.614s +08d52m26.09s of `CRETA/param_files/NGC7469_MIRI_single_params.txt`.
@@ -319,6 +319,25 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
     - Unstitched new / R1 runs from 1.155 (ch1-short) to 0.97–1.01 (ch3–ch4).
   - **Against reg1** (shape only; both divided by their median over 2.83–28.1 µm rest): new / reg1 is 1.3–1.7 at 2.8–5.6 µm and falls to 0.26 at 24–28 µm. Below 1 where reg1's PAHs are stronger (7.4–8.6, 11.4–13.3 µm), and about 1.5 in reg1's silicate absorption.
     - reg1 is a much redder, PAH-stronger region than the 1.5″ nucleus, so it is not a stand-in for it.
+- **Step 2 (approved 2026-11-19): 10 plain fits of the NIRSpec + MIRI spectrum** (see "Decisions"). *(Done 2026-11-19, waiting for my review. Work folder: `tests/M5/` (`resolution_check.py`, `m5_fit.py`, `run_fit.sh`, `m5_summary.py`), fits in `out/j<j>/`, logs in `logs/`.)*
+  - **Setup:**
+    - `NGC7469_NIRSpec+MIRI_SingleExt_r1.5as_cube.fits` (step 1), z = 0.0163, `read_spec(ignore_DQ=True, flux_scale = 1 + j × 10⁻⁷)`, j = 0…9; 17,730 channels fitted.
+    - Inpars: `tests/M5/params/inpars_jwst_nirspec-miri_AGN_M5.ini`, a copy of the shipped `inpars_jwst_nirspec-miri_AGN.ini` with two lines changed: `Source_HOT = 'AGN'`, `STR_FLX = 0.2, True, 0., 2.` (STR_TAU stays fixed at 0).
+    - Shipped `default_opt.cafe`; no photometry; 222 free parameters at the start, 179 at the end (178 in one fit); `dev` @ `47f1fc9`.
+  - **Pre-check:** the resolving-power tables cover every band; HOT and STB are free; STR is fixed at 0 in every shipped inpars. Read as shipped, CAFE drops ch1-short, ch1-long and all but 23 ch1-medium channels (15,279 channels reach the fit). See "Biases", (a)–(c).
+  - **χ² (floored):** best 201,523.95 (χ²/N 11.37).
+    - Δχ² to the best: 0, 0.5, 0.6, 1.4, 1.7, 2.4 (six fits) and 31.5, 31.9, 32.1, 34.0 (j = 5, 4, 3, 8). 3 of 10 are the same fit (Δχ² < 1). All stop on `ftol`; one refit (j = 0).
+    - The two groups differ only in line and PAH peaks, by 0.1–1% (most in H I Pfund and Paschen lines, [Ne II], H₂ S(2)). In the four higher fits CAFE fixes the narrow [Si VIII] 5.29 µm component after the fit as unconstrained.
+  - **HOT, STB, STR:** the same in all 10 fits to 4–5 digits.
+    - HOT_FLX 0.1600–0.1601; **HOT_TMP at its upper bound, 1027.2** (fixed after the fit in 7); HOT_TAU 7.307–7.309.
+    - STB_FLX 0.3182; STB_TAU 1.617; STB_010 at its upper bound, 1 (fixed after the fit in all 10).
+    - **STR_FLX at 0** (fixed after the fit in all 10). DSK_FLX 0.2317, DSK_TAU 0.091.
+    - Correlation within each fit (lmfit, first minimize call): HOT_FLX–STB_FLX +0.83, HOT_FLX–STR_FLX −0.60, STB_FLX–STR_FLX −0.79, HOT_FLX–HOT_TMP −0.33. Across the fits the values differ only at the rounding level, so a correlation across them means nothing.
+  - **Fractions of the continuum over 5–6 µm rest** (∫F_ν dν), the same in all 10 fits: HOT 0.327, STB 0.080, STR 0, DSK 0.461, WRM 0.132.
+    - R1 state A: HOT 0.515, STB 0.301, WRM 0.184, DSK 0. State B: HOT 0.197, STB 0.692, WRM 0.111, DSK 0.
+    - With the 1–5 µm data the fit is in neither of R1's states: the AGN disc, at 0 in R1, takes 46%, HOT is at its upper temperature bound, and STB is small.
+  - **χ² per band** (best fit): ch4-long 27% (χ²/N 79), G140H 20%, G235H 15%, ch3-short 12% (χ²/N 39); every other band ≤ 5%.
+  - Cost (information only): 6.3–16.7 min per fit, 38 min for the 10 at 3 at a time; peak memory 0.8 GB.
 
 ### M6 — Cube-fit performance and parallelisation
 - **First item (logged 2026-11-19): R2's fits at the 50 K wall.** In the M4 baseline, 2 of 10 R2 plain fits ended at the 50 K wall between the COO and WRM ranges (WRM_TMP at its lower bound, COO_TMP 48.3 K), with χ² 2.6× the best (see "Biases", 2026-11-18). M6's cube fits will show how often this happens. The candidate remedy is the ratio constraint on the dust temperatures under "Later".
@@ -656,6 +675,9 @@ cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHO
 cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python coverage_check.py > logs/coverage_check.txt && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python offset_effect.py > logs/offset_effect.txt   # M5: 1.5" aperture coverage, and the flux change for the 0.19" offset
 cd /Users/tanio/pywork/cafe_work && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python tests/M5/extract.py > tests/M5/logs/extract.txt   # M5: CRETA NIRSpec+MIRI single extraction (params in tests/M5/params/; cubes symlinked in data/NGC7469/cubes_nirspec_wcsfix+miri/)
 cd /Users/tanio/pywork/cafe_work/tests/M5 && ~/miniforge3/envs/cafe-dev/bin/python compare.py > logs/compare.txt   # M5: stitching ratios, new vs R1 per band, new vs reg1 shape, plot
+cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python resolution_check.py [ignore_DQ] > logs/resolution_check[_ignoreDQ].txt   # M5 step 2: channels the fit sees, resolving-power tables per band and line, HOT/STR/STB settings
+cd /Users/tanio/pywork/cafe_work/tests/M5 && (for j in 0 1 2 3 4 5 6 7 8 9; do echo $j; done) | xargs -n 1 -P 3 ./run_fit.sh   # M5 step 2: 10 plain fits, 3 at a time (out/j<j>, logs/fit_j<j>.txt)
+cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python m5_summary.py > logs/m5_summary.txt   # M5 step 2: χ², HOT/STB/STR, 5–6 µm fractions vs R1 states A/B, χ² per band
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
 
@@ -986,6 +1008,11 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
      - Then show the stitching ratios between bands and at the NIRSpec–MIRI join. Compare the new spectrum with R1 (the MIRI part, ratio per band) and with reg1 (read with z = 0; shape only, normalised, since the apertures differ).
      - If it can't: don't extract. The NIRSpec + MIRI spectrum is then reg1 (read with z = 0); tell me what CRETA would need to combine the two instruments.
   3. Report and stop; no fits yet.
+- 2026-11-19: **M5 step 1's extraction choices approved:** the `wcsfix` NIRSpec cubes, all three gratings, centring at 5.4 µm.
+- 2026-11-19: **M5 step 2: fit the NIRSpec + MIRI spectrum** (z = 0.0163) with `inpars_jwst_nirspec-miri_AGN.ini` and the shipped `default_opt.cafe`, no photometry: 10 plain fits with the rounding-level inputs.
+  - For these fits only, in a work-folder copy of the inpars (the shipped file untouched): `read_spec(ignore_DQ=True)`; `STR_FLX = 0.2, True, 0., 2.` with STR_TAU fixed at 0; `Source_HOT = 'AGN'`; line resolving powers as they are.
+  - Report the χ² spread and how many fits agree (Δχ² < 1); HOT, STB and STR per fit and their correlation; HOT's and STB's fractions of the continuum over 5–6 µm against R1's states A and B.
+  - Log, not fixed yet: (a) CRETA's DQ, (b) the line resolving powers, (c) the shipped `nirspec-miri_AGN` inpars heating HOT with the ISRF. Then propose fixes for (a) and (b), no code, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1096,6 +1123,15 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Unchanged by the floor: the 5% calibration offset in what the spectrum pins down (24 µm band 1.049, cool dust 1.05, feature-peak median 1.04, 1.05, 1.03), and the hot-dust / AGN-disc degeneracy (fHOT 2.0–2.6×, HOT_TMP 1,022–1,027 K vs 695 K).
   - Not tested: floors between 0 and 0.75%, where the photometry's leverage falls from 6.7% to 0.26%; other noise realisations (differences of ~1% between the runs may be noise).
   - Cost (information only): 30,004 fit steps at 0.75%, 8,227 at 1.5%, 7,405 at 3%.
+- 2026-11-19: **Fix proposal for (a): CRETA's single-extraction DQ over the circle** (see "Biases", (a)).
+  - In `getApertureDQList` (`cube_preproc.py`), take the maximum over the pixels the aperture covers (photutils `ApertureMask.get_values`, the pixels with weight > 0) instead of over the cutout square.
+  - A channel is then flagged only when a flagged pixel overlaps the circle. Since CRETA turns flagged pixels into NaN, that is exactly when its flux is NaN. The fluxes do not change.
+  - Test: a synthetic cube with flagged pixels only in the square's corners (DQ 0 expected) and one with a flagged pixel inside the circle (DQ ≠ 0, flux NaN); then NGC7469's extraction redone: fluxes bit-identical, DQ ≠ 0 exactly on the NaN channels, and the channels reaching the fit identical to step 2's with `ignore_DQ=True`.
+- 2026-11-19: **Fix proposal for (b): each line takes the resolving power of the band its data come from** (see "Biases", (b)).
+  - CRETA cubes carry each channel's band; `read_spec` keeps it and `mask_spec` returns it, but the fit's `Spectrum1D` drops it before `CAFE_prof_generator`.
+  - Pass the band names on to `init_feats`. Give each line the table of the band of the channel nearest its observed wavelength, through a fixed map from CRETA's band names (`G140H` … `ch4_LONG`, stored as `('G140H')`) to the tables (`G140H` … `MIRI_CH4L`). Which lines are fitted stays as now.
+  - Spectra without band names (`.dat`, `.txt`, `.csv`: `UNKNOWN`) keep today's rule. Whether they need more, R1 included, is my decision.
+  - Test: a synthetic spectrum with two bands whose tables overlap and lines inside and beyond the overlap (known resolving powers); on the NIRSpec + MIRI spectrum only the lines listed under (b) change; R1 unchanged.
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
@@ -1150,6 +1186,17 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - The NIRSpec–MIRI join (1.18 at 4.90–5.28 µm) is a level difference between the two instruments' reductions: the aperture, at one sky position, changes it by ≤ 0.4%. Not acted on.
 - 2026-11-19: **NIRSpec's and MIRI's WCS place NGC7469's nucleus 0.19″ apart** (the `wcsfix` NIRSpec cubes; 0.60″ with the December 2022 ones), measured with CRETA's centring. For a 1.5″ aperture this changes the flux by ≤ 0.4%; for small apertures it would matter. Not acted on.
 - 2026-11-19: **CRETA's "contains all NaNs" warning in `singleExtraction` checks only the first plane of each band** (`final_apers` holds plane 0 of each band). It fires for bands whose first plane is NaN; NGC7469's three NIRSpec bands are 92% valid. For the clean-up list.
+- 2026-11-19: **(a) CRETA's single-extraction DQ is the maximum over the square around the aperture, not over the circle** (`getApertureDQList`, `cube_preproc.py`: `np.max(mask.cutout(DQ))`). Not fixed yet (proposal under "Awaiting my OK").
+  - Where the square's corners reach the flagged edge of a cube's field (DQ 513), every channel is flagged, and CAFE's `mask_spec` drops every channel with DQ ≠ 0.
+  - In NGC7469's 1.5″ extraction (M5 step 1) this flags all of ch1-short and ch1-long, 948 of 971 ch1-medium channels and 31 channels per NIRSpec grating. None of them has a flagged pixel in the circle: CRETA turns flagged pixels into NaN, and their fluxes are finite.
+  - Not affected: R1 (`.dat`, no DQ); R2 (DQ ≠ 0 only on its NaN channels); CRETA's grid extraction, which sums the DQ over the circle.
+- 2026-11-19: **(b) CAFE gives each line the resolving power of the first table, in the inpars' order, whose range contains the line, not that of the band its data come from** (`init_feats`, `cafe_helper.py`). Not fixed yet (proposal under "Awaiting my OK").
+  - The tables' ranges are wider than the bands' data, and narrow-line widths are fixed at that resolving power (`FitGamma_LIN_N = False`).
+  - NIRSpec + MIRI (M5 step 2): G395H's table (to 6.00 µm) gives [S VII] 5.23, [Si VIII] 5.29, [Fe II] 5.34, [Fe VIII] 5.45, [Mg VII] 5.50, H₂ S(7) 5.51 and [Mg V] 5.61 µm (rest), on ch1-short data, a resolving power 10–13% too high, and [Fe II] 5.67 µm (ch1-medium) 28% too high.
+  - Within MIRI, so also in R1: [P III] 17.89 and [Fe II] 17.94 µm +80% (ch3-long's table on ch4-short data), [Ne V] 24.32 µm +12%, H I 8.67 µm +11%.
+- 2026-11-19: **(c) The shipped `inpars_jwst_nirspec-miri_AGN.ini` heats HOT with the ISRF** (`Source_HOT = 'ISRF'`), where `inpars_jwst_miri_AGN.ini` uses `'AGN'`. Apart from `resolutions`, this is the only difference between the two files. Not acted on.
+- 2026-11-19: **In the NIRSpec + MIRI fit, HOT_TMP ends at its upper bound (1027.2) in all 10 fits, and the AGN disc takes 46% of the 5–6 µm continuum** (M5 step 2). STR ends at 0 and STB_010 at 1 (all 10 Myr). With the 1–5 µm data the hot dust reaches the top of its range and the disc fills in. HOT's range is my decision (kept in M4). Not acted on.
+- 2026-11-19: **ch4-long holds 27% of the NIRSpec + MIRI fit's χ²** (χ²/N 79; median residual −2.3%, a dip and a rise at 24–28 µm), as channel 4C held 39% of R1's at state B. Not acted on.
 - 2026-11-17: **The cool and warm dust components can swap temperatures**: both TMP bounds are [0, ∞) in the shipped inpars, with no order between them. In R2 (M4 stage 2), 7 of 10 stage 1 fits end with COO at 59.4 K and WRM at 29.5 K, about 3,000 higher in χ² than the other state, because `PAH_TAU = WRM_TAU` makes the two labellings differ. Not acted on (see "Awaiting my OK").
 - 2026-11-17: **The restart test in M4 stage 2 (stop when a restart lowers χ² by < 1) ended R1's chains while they were still falling ~2 per restart.** A diagnostic setting only; R1's minimum along the valley is not reached.
 - 2026-11-17: **Line components at their lower bound stay there.** In R2, the end points within the better minimum differ by which narrow or broad component of H I Humphreys 9–6 (5.91 µm) and 7–6 (12.37 µm) sits at 0; restarts don't bring it back. TRF's step shrinks for parameters near a bound, which may hold them there (not tested). Not acted on.
