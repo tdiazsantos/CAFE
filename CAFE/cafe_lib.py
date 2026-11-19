@@ -88,7 +88,6 @@ def mask_spec(data, x=0, y=0):
                 > np.nanmedian(data.fluxes[:, y, x])
                 + mad_std(data.fluxes[:, y, x], ignore_nan=True) * 1e3
             )  # (data.fluxes[:,y,x] < np.nanmedian(data.fluxes[:,y,x])-mad_std(data.fluxes[:,y,x], ignore_nan=True)*1e3) |\
-            | (data.fluxes[:, y, x] < 0)
         ] = True  # | (data.fluxes[:,y,x] < 0)
         flux = data.fluxes[~mask, y, x]
         flux_unc = data.flux_uncs[~mask, y, x]
@@ -101,7 +100,6 @@ def mask_spec(data, x=0, y=0):
                 > np.nanmedian(data.fluxes)
                 + mad_std(data.fluxes, ignore_nan=True) * 1e3
             )  # (data.fluxes < np.nanmedian(data.fluxes)-mad_std(data.fluxes, ignore_nan=True)*1e3) |\
-            | (data.fluxes < 0)
         ] = True  # | (data.fluxes < 0)
         flux = data.fluxes[~mask]
         flux_unc = data.flux_uncs[~mask]
