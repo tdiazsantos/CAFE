@@ -19,7 +19,7 @@ cafeio = cafe_io()
 
 class CAFE_param_generator:
 
-    def __init__(self, spec, bandname, inparfile, optfile, cafe_path=None):
+    def __init__(self, spec, inparfile, optfile, cafe_path=None, bandname=None):
 
         # The data is read from a spectrum1D object
         self.wave = spec.spectral_axis.value
@@ -68,7 +68,7 @@ class CAFE_param_generator:
         if parobj_update is False:
             # Initialize the feature waves, gammas and peaks (and names for lines or complexes for PAHs) from input file
             # Note that these are just individual features, and do not include broad components or the parameters themselves
-            gauss, drude, gauss_opc = self.init_feats(self.wave, self.flux, self.flux_unc, self.z, self.tablePath, instnames, self.bandname, get_all=get_all, force_all=force_all,
+            gauss, drude, gauss_opc = self.init_feats(self.wave, self.flux, self.flux_unc, self.z, self.tablePath, instnames, bandname=self.bandname, get_all=get_all, force_all=force_all,
                                                       atomic_table=inpars['MODULES & TABLES']['ATOMIC_INPUT'],
                                                       molecular_table=inpars['MODULES & TABLES']['MOLECULAR_INPUT'],
                                                       hrecomb_table=inpars['MODULES & TABLES']['HRECOMB_INPUT'],
@@ -111,14 +111,14 @@ class CAFE_param_generator:
     def init_feats(wave, flux, flux_unc, z,
                    tablePath,
                    instnames,
-                   bandname,
                    get_all=False,
                    force_all=False,
                    atomic_table=None, 
                    molecular_table=None, 
                    hrecomb_table=None,
                    pah_table=None,
-                   gopacity_table=None):
+                   gopacity_table=None,
+                   bandname=None):
         ''' Initialize line parameters with an iterative estimate
 
         Drude peaks are a bit different (few ppt) compared with IDL version but I think it's
@@ -128,7 +128,6 @@ class CAFE_param_generator:
         wave -- rest wavelengths to compute spectrum at
         flux -- measured fluxes at those wavelengths
         flux_unc -- uncertainty in measured flux
-        bandname -- band of each channel (CRETA: 'G140H', ..., 'ch1_SHORT', ...; 'UNKNOWN' for plain tables)
 
         Keyword Arguments:
         minWave -- minimum wavelength cutoff to apply to lines (default None)
@@ -141,6 +140,8 @@ class CAFE_param_generator:
         hrecomb_table -- List of input hydrogen recombination features if set (default None)
         pah_table -- List of input PAH features if set (default None)
         gopacity_table -- List of input gaussian opacity features if set (default None)
+        bandname -- band of each channel (CRETA: 'G140H', ..., 'ch1_SHORT', ...; 'UNKNOWN' for plain tables), or None
+                    to give every line the first table whose range holds it (default None)
 
         Returns: Initial guesses for gaussian and drude line profile parameters for
         lines in the wavelength range
@@ -243,13 +244,14 @@ class CAFE_param_generator:
 
         # A line takes the resolving power of the band of its nearest channel when one of the tables is that band's
         # (e.g. 'ch1_SHORT' -> 'MIRI_CH1S'); otherwise it keeps the first table whose range holds it
-        line_bands = bandname[np.abs(wave[np.newaxis, :] - wave0[:, np.newaxis]).argmin(axis=1)]
-        for band in np.unique(line_bands):
-            band_key = band.upper().replace('_SHORT', 'S').replace('_MEDIUM', 'M').replace('_LONG', 'L')
-            band_inst = next((inst for inst in inst_df.itertuples() if band_key in inst.inst.upper()), None)
-            if band_inst is not None:
-                in_band = line_bands == band
-                gam[in_band] = 1. / (band_inst.rSlope * wave0[in_band]*(1+z) + band_inst.rBias)
+        if bandname is not None:
+            line_bands = bandname[np.abs(wave[np.newaxis, :] - wave0[:, np.newaxis]).argmin(axis=1)]
+            for band in np.unique(line_bands):
+                band_key = band.upper().replace('_SHORT', 'S').replace('_MEDIUM', 'M').replace('_LONG', 'L')
+                band_inst = next((inst for inst in inst_df.itertuples() if band_key in inst.inst.upper()), None)
+                if band_inst is not None:
+                    in_band = line_bands == band
+                    gam[in_band] = 1. / (band_inst.rSlope * wave0[in_band]*(1+z) + band_inst.rBias)
         
         # --------------------------
         # Calculate peaks
