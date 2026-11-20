@@ -911,7 +911,7 @@ class cube_preproc:
                    # aperstats2 = ApertureStats(cube.DQ[i,:,:], aper)
                    mask = aper.to_mask()
                    dq_masked = mask.cutout(cube.DQ[i,:,:])
-                   dqv = np.max(dq_masked)
+                   dqv = np.max(dq_masked[mask.data > 0])
                    # print(aperstats2.max) 
                    res.append(dqv)
 
