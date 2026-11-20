@@ -141,7 +141,8 @@ class CAFE_param_generator:
         pah_table -- List of input PAH features if set (default None)
         gopacity_table -- List of input gaussian opacity features if set (default None)
         bandname -- band of each channel (CRETA: 'G140H', ..., 'ch1_SHORT', ...; 'UNKNOWN' for plain tables), or None
-                    to give every line the first table whose range holds it (default None)
+                    to give every line the first table whose range holds it (default None). Every band other than
+                    'UNKNOWN' must have its table in instnames
 
         Returns: Initial guesses for gaussian and drude line profile parameters for
         lines in the wavelength range
@@ -242,16 +243,17 @@ class CAFE_param_generator:
         wave0 = wave0[inds]
         doubs = doubs[inds]
 
-        # A line takes the resolving power of the band of its nearest channel when one of the tables is that band's
-        # (e.g. 'ch1_SHORT' -> 'MIRI_CH1S'); otherwise it keeps the first table whose range holds it
+        # A line takes the resolving power of the band of its nearest channel, from that band's table (e.g. 'ch1_SHORT'
+        # -> 'MIRI_CH1S'). Lines on 'UNKNOWN' bands keep the first table whose range holds them
         if bandname is not None:
             line_bands = bandname[np.abs(wave[np.newaxis, :] - wave0[:, np.newaxis]).argmin(axis=1)]
-            for band in np.unique(line_bands):
+            for band in np.unique(bandname[bandname != 'UNKNOWN']):
                 band_key = band.upper().replace('_SHORT', 'S').replace('_MEDIUM', 'M').replace('_LONG', 'L')
                 band_inst = next((inst for inst in inst_df.itertuples() if band_key in inst.inst.upper()), None)
-                if band_inst is not None:
-                    in_band = line_bands == band
-                    gam[in_band] = 1. / (band_inst.rSlope * wave0[in_band]*(1+z) + band_inst.rBias)
+                if band_inst is None:
+                    raise ValueError('The RESOLUTIONS in the inpars have no table for band ' + band)
+                in_band = line_bands == band
+                gam[in_band] = 1. / (band_inst.rSlope * wave0[in_band]*(1+z) + band_inst.rBias)
         
         # --------------------------
         # Calculate peaks
