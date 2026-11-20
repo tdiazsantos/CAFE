@@ -237,7 +237,7 @@ class cubemod:
 
         # Initialize CAFE param generator for the highest SNR spaxel
         print('Generating initial/full parameter object with all potential lines')        
-        param_gen = CAFE_param_generator(spec, inparfile, optfile, cafe_path=self.cafe_dir)
+        param_gen = CAFE_param_generator(spec, bandname, inparfile, optfile, cafe_path=self.cafe_dir)
         # These are keywords used by deeper layers of cafe
         _, outPath = cafeio.init_paths(self.inopts, cafe_path=self.cafe_dir, file_name=self.result_file_name, output_path=output_path)
         self.outPath = outPath
@@ -285,7 +285,7 @@ class cubemod:
             
             print('##############################################################################################################')
             print('Regenerating parameter object for current spaxel:',np.flip(snr_ind), '(', spax, '/', len(ind_seq[0]), ')')        
-            param_gen = CAFE_param_generator(spec, inparfile, optfile, cafe_path=self.cafe_dir)
+            param_gen = CAFE_param_generator(spec, bandname, inparfile, optfile, cafe_path=self.cafe_dir)
             init_params = param_gen.make_parobj(force_all=force_all_lines)
             
             print('Regenerating continuum profiles')
@@ -397,7 +397,7 @@ class cubemod:
         
         # Initiate CAFE param generator and make parameter file
         print('Generating continuum profiles for guess model from the .ini file')
-        param_gen = CAFE_param_generator(spec, inparfile, optfile, cafe_path=self.cafe_dir)
+        param_gen = CAFE_param_generator(spec, bandname, inparfile, optfile, cafe_path=self.cafe_dir)
         params = param_gen.make_parobj(force_all=force_all_lines)
 
         # Initiate CAFE profile loader and make cont_profs
@@ -717,7 +717,7 @@ class specmod:
         self.phot_dict = phot_dict
             
         # Initiate CAFE param generator
-        param_gen = CAFE_param_generator(spec, inparfile, optfile, cafe_path=self.cafe_dir)
+        param_gen = CAFE_param_generator(spec, bandname, inparfile, optfile, cafe_path=self.cafe_dir)
         _, outPath = cafeio.init_paths(self.inopts, cafe_path=self.cafe_dir, file_name=self.result_file_name, output_path=output_path)
 
         print('Generating parameter cube with initial/full parameter object')
@@ -850,7 +850,7 @@ class specmod:
 
         # Initiate CAFE param generator and make parameter file
         print('Generating continuum profiles for guess model from the .ini file')
-        param_gen = CAFE_param_generator(spec, inparfile, optfile, cafe_path=self.cafe_dir)
+        param_gen = CAFE_param_generator(spec, bandname, inparfile, optfile, cafe_path=self.cafe_dir)
         params = param_gen.make_parobj(force_all=force_all_lines)
         
         if init_parcube is not False:
