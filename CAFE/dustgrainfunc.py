@@ -429,10 +429,10 @@ def grainSizeDF(rad, T_bb, sourceType, tablePath, model='WD01-RV31', dndaTab=Non
         ### If something goes wrong, check here first
         if T_bb.size == 1:
             dndaSil[tEQ['Sil'] > tSubSil,i] = 0.
-            dndaCarb[tEQ['Carb'] > tSubSil,i] = 0.
+            dndaCarb[tEQ['Carb'] > sSubCar,i] = 0.
         else:
             dndaSil[tEQ['Sil'][:,i] > tSubSil,i] = 0.
-            dndaCarb[tEQ['Carb'][:,i] > tSubSil,i] = 0.
+            dndaCarb[tEQ['Carb'][:,i] > sSubCar,i] = 0.
 
     # Apply big and small cutoffs
     # Possibly related to the inclusion of VSGs in the Draine models
