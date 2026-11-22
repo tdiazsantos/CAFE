@@ -284,7 +284,7 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 ### M5 — Fits with real photometry *(approved 2026-11-19)*
 - Fits of a JWST spectrum together with real photometry. The fake-photometry setup is for functional checks only (CLAUDE.md §10).
 - Refit, with the G14 fix (`93a90dc`), my pre-sync fits that have a temperature on a G14 jump: 51 of 121 distinct fits, CLD_TMP at 6.351 K in 42 of the 91 with CLD free, mostly the CYGNUS fits (logged 2026-11-18; see "Biases", G14).
-- **The HOT–STB degeneracy** (decided 2026-11-19): goes here, with near-IR photometry, and to a NIRSpec + MIRI spectrum of NGC7469 (see "Later").
+- **The HOT–STB degeneracy** (decided 2026-11-19): goes here, with near-IR photometry, and to a NIRSpec + MIRI spectrum of NGC7469 (see "Later"). *(NIRSpec + MIRI part closed 2026-11-22: NIRSpec removes M4's MIRI-only valley; see the end of the NIRSpec + MIRI steps below.)*
 - **Step 1 (approved 2026-11-19): NGC7469 NIRSpec + MIRI with CRETA's single extraction** (see "Decisions"). *(Done 2026-11-19, waiting for my review; no fits. Work folder: `tests/M5/`, `extractions/NGC7469_NIRSpec+MIRI/`.)*
   - **Data** (read only):
     - NIRSpec, `nirspec/ifu/data/NGC7469/`: G140H/F100LP, G235H/F170LP and G395H/F290LP (`jw01328-o018_t010_nirspec_<grating>_s3d`).
@@ -415,7 +415,7 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
     - **χ² per band** (best fits, against `hot1750`): ch4-long +22,077, G395H +7,082, ch4-short +6,914, ch1-medium +5,225, G235H +3,230, ch3-short +2,827, ch3-medium +2,349, ch4-medium +2,084; G140H −456 and ch2-medium −862.
     - **Which change does it: not separated.** `hot1750`'s best with only DSK_TAU set to 0 gives χ² 3,921,068 (`tau01_check.py`, no refit; it rebuilds both best fits' χ² exactly). So that point does not tell whether the 0.1 starts or DSK_TAU = 0 lead to the new state. Fits with each change alone would.
     - Cost (information only): 9.9–20.5 min per fit, 3 at a time.
-- **DSK_TAU free again: the candidate `0.1, True, 0., 0.5` (approved 2026-11-20; run set `dskfree`)** (see "Decisions"). *(Done 2026-11-20, waiting for my review. Work folder: `tests/M5/` (`dskfree_summary.py`; `m5_fit.py` run set `dskfree`); fits in `out/dskfree_j<j>/`; log `logs/dskfree_summary.txt`.)*
+- **DSK_TAU free again: the candidate `0.1, True, 0., 0.5` (approved 2026-11-20; run set `dskfree`)** (see "Decisions"). *(Done 2026-11-20. Reviewed 2026-11-22: DSK_TAU's shipped default becomes this candidate, see the next bullet. Work folder: `tests/M5/` (`dskfree_summary.py`; `m5_fit.py` run set `dskfree`); fits in `out/dskfree_j<j>/`; log `logs/dskfree_summary.txt`.)*
   - **Setup:** as `tau01`, with `tests/M5/params/inpars_jwst_nirspec-miri_AGN_M5_dskfree.ini`: the `tau01` copy with `DSK_TAU = 0.1, True, 0., 0.5`. Only j = 0, 1 and 2 (my change, 2026-11-20).
     - Against `tau01`: only DSK_TAU. Against `hot1750`: the 0.1 starts of COO_TAU, HOT_TAU and STB_TAU, and DSK_TAU's upper bound (0.5 here, 2 there).
     - 223 free parameters at the start, 181 at the end. `dev` @ `3be2054` (code as at `9ffc4b7`).
@@ -428,6 +428,10 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
   - **χ² per band** (best fits, `dskfree` − `hot1750`): ch4-long +918, G235H +869, G140H +678, ch2-medium +678, ch2-long +530, ch1-medium +362, G395H +315; ch4-medium −319.
   - **So DSK_TAU = 0 is what made the disc drop out in `tau01`.** With DSK_TAU free, the 0.1 starts reach `hot1750`'s STR-on state. The fits don't separate whether the 0.1 starts or DSK_TAU's 0.5 bound send them there rather than to the lower state. DSK_TAU ends at 0.39, inside both bounds. Three fits can't tell how often each state occurs.
   - Cost (information only): 57.7–60.8 min per fit, 3 at a time, on a machine loaded by other jobs (load average 21–29). That is 19,499–21,510 evaluations, against 16,360–17,255 for `hot1750`'s j = 0–2 (10.0–10.8 min). Peak memory 0.28–0.30 GB.
+- **DSK_TAU's shipped default, commit `72e9edd` (decided 2026-11-22):** `DSK_TAU = 0.1, True, 0., 0.5` wherever DSK is free: `miri_AGN`, `nirspec-miri_AGN` and `SB_and_AGN`. `_reg` stays on the M7 list.
+  - Test (`inpars_dsktau_test.py`: each file as `read_inifile` reads it, against `669ebe2`): only DSK_TAU changes, and only in those three files. Every file's continuum parameter object builds, with its values within bounds.
+  - The shipped `nirspec-miri_AGN` now differs from the `dskfree` copy only by step 2's two changes (`Source_HOT`, STR_FLX).
+- **NIRSpec + MIRI step closed (2026-11-22, my decision): NIRSpec removes M4's MIRI-only valley.** What is left is logged in "Biases" (2026-11-22): the two end states, and the dust optical depths bent toward a power law.
 
 ### M6 — Cube-fit performance and parallelisation
 - **First item (logged 2026-11-19): R2's fits at the 50 K wall.** In the M4 baseline, 2 of 10 R2 plain fits ended at the 50 K wall between the COO and WRM ranges (WRM_TMP at its lower bound, COO_TMP 48.3 K), with χ² 2.6× the best (see "Biases", 2026-11-18). M6's cube fits will show how often this happens. The candidate remedy is the ratio constraint on the dust temperatures under "Later".
@@ -787,6 +791,7 @@ cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHO
 cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python tau01_check.py > logs/tau01_check.txt 2>&1   # M5: both best fits' χ² rebuilt from m5_run.json; hot1750's best with DSK_TAU = 0 (no fit)
 cd /Users/tanio/pywork/cafe_work/tests/M5 && (for j in 0 1 2; do echo "$j dskfree"; done) | xargs -n 2 -P 3 ./run_fit.sh   # M5: 3 plain fits with the tau01 copy and DSK_TAU = 0.1, True, 0., 0.5, DQ-fixed extraction with the DQ used (out/dskfree_j<j>, logs/fit_dskfree_j<j>.txt)
 cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python dskfree_summary.py > logs/dskfree_summary.txt   # M5: dskfree against hot1750 and tau01: χ², end states, every τ, bounds, HOT_TMP, COO_TMP, 5–6 µm fractions, χ² per band
+cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python inpars_dsktau_test.py /Users/tanio/Sync/pywork/CAFE > logs/inpars_dsktau_test.txt 2>&1   # M5: the seven shipped inpars after 72e9edd against 669ebe2 (DSK_TAU where DSK is free; all else identical)
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
 
@@ -1133,7 +1138,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Log, don't fix: DSK taking the near-power-law continuum is a limitation of CAFE's dust components (a temperature gradient seen as a power law), not something to fix.
   - Shipped inpars, all seven, one commit shown file by file *(done: `9ffc4b7`)*:
     - every free `_TAU` of COO, WRM, HOT and STB starts at 0.1, so extinction grows only where the data need it;
-    - wherever DSK is free, `DSK_TAU = 0.0, False` (`miri_AGN`, `nirspec-miri_AGN`, `NGC7469_NIRSpec+MIRI_reg`), as `SB_and_AGN` already has it, so the disc can't take over other components' shape *(under review since 2026-11-20, see the next entry)*;
+    - wherever DSK is free, `DSK_TAU = 0.0, False` (`miri_AGN`, `nirspec-miri_AGN`, `NGC7469_NIRSpec+MIRI_reg`), as `SB_and_AGN` already has it, so the disc can't take over other components' shape *(replaced 2026-11-22: `0.1, True, 0., 0.5`, commit `72e9edd`)*;
     - HOT_TMP's upper bound becomes 1750 K (the grid's top, now that carbon survives to 1750 K).
     - Every other bound, vary flag and expression stays as it is.
   - Then rerun the 10 NIRSpec + MIRI fits with the same changes in the work-folder copy (DQ-fixed extraction, no `ignore_DQ`). Report against `hot1750`: the χ² spread and end states, every `_TAU`, HOT_TMP, and HOT's, DSK's and STR's fractions of the 5–6 µm continuum. Then stop.
@@ -1141,6 +1146,10 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - `inpars_jwst_NGC7469_NIRSpec+MIRI_reg.ini` goes to the M7 clean-up list (it can't load). Nothing else on it now.
   - One set that tests the candidate: NIRSpec + MIRI fits with the `tau01` copy, changing only DSK_TAU to `0.1, True, 0., 0.5` (DQ-fixed extraction, no `ignore_DQ`). Changed the same day: only j = 0, 1 and 2 (one batch of 3), not 10.
   - Report against `hot1750` and `tau01`: the χ² spread and end states, every `_TAU` (and whether DSK_TAU ends at its bound), HOT_TMP and COO_TMP (and whether at a bound), DSK_FLX, and HOT's, DSK's, WRM's, STR's and STB's fractions of the 5–6 µm continuum. Commit the brief; then stop.
+- 2026-11-22: **DSK_TAU's shipped default: `0.1, True, 0., 0.5` wherever DSK is free** (`miri_AGN`, `nirspec-miri_AGN`, and `SB_and_AGN`, which I confirmed when asked; `_reg` stays on the M7 list). Its own commit, shown file by file *(done: `72e9edd`)*.
+  - Log, don't act: (a) with DSK free, HOT_TAU and COO_TAU still end at 8–9 despite the 0.1 starts. Like DSK's role, this is the single-temperature dust components being bent toward a power law, part of the logged limitation. (b) The NGC7469 NIRSpec + MIRI fits have two end states 2% apart in χ². In one, STR is at 0 and DSK_TAU is 0.09. In the other, STR is on and DSK_TAU is 0.39. With the 0.1 starts the fits reach the STR-on one.
+  - This closes the NIRSpec + MIRI step: NIRSpec removes M4's MIRI-only valley.
+  - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1268,9 +1277,10 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-20: **`inpars_jwst_NGC7469_NIRSpec+MIRI_reg.ini` cannot be loaded, so its NIRSpec tables are not added yet** (see "Biases"). Adding `JWST_NIRSpec_G140H` and `JWST_NIRSpec_G235H` in the file's own spelling would leave it failing. Options: (i) `read_inst` matches the names to the file names case-insensitively (code, two lines); the file then loads as written, and the two tables are added in its spelling. (ii) The file's NIRSpec names become `G140H`, `G235H`, `G395H` (inpars only).
   - *(Chosen 2026-11-20: (i). On hold the same day: (i) alone does not make `_reg` load. It also lacks `PAH_INPUT`, `GOPACITIES_INPUT` and seven OPC/Vgrad options, and names three line tables that do not exist (see "Biases"). Loading it means bringing it to the current format, which needs my choices: which line lists, PAH and opacity tables, and OPC/Vgrad settings (e.g. those of `nirspec-miri_AGN`). Or it stays as it is, logged. (i) on its own is still a fix for mixed-case table names.)*
   - *(Decided 2026-11-20: `_reg` goes to the M7 clean-up list; nothing else on it now.)*
-- 2026-11-20: **DSK_TAU in the shipped inpars where DSK is free** (`miri_AGN`, `nirspec-miri_AGN`; my decision). Now `0.0, False` (`9ffc4b7`, under review). The candidate is `0.1, True, 0., 0.5`. On NGC7469's NIRSpec + MIRI spectrum (M5, `tau01` and `dskfree`):
+- 2026-11-20: **DSK_TAU in the shipped inpars where DSK is free** (`miri_AGN`, `nirspec-miri_AGN`; my decision; *corrected 2026-11-22: `SB_and_AGN` has DSK free too*). Now `0.0, False` (`9ffc4b7`, under review). The candidate is `0.1, True, 0., 0.5`. On NGC7469's NIRSpec + MIRI spectrum (M5, `tau01` and `dskfree`):
   - **Fixed at 0:** the disc drops out, and COO_TMP sits at its 50 K bound. χ² is 50,414 higher.
   - **Free:** the disc keeps 46% of the 5–6 µm continuum, and DSK_TAU ends at 0.39. With the 0.1 starts, the three fits all ended in `hot1750`'s STR-on state, 3,924 above its best.
+  - *(Decided 2026-11-22: `0.1, True, 0., 0.5` in `miri_AGN`, `nirspec-miri_AGN` and `SB_and_AGN`; commit `72e9edd`.)*
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
@@ -1348,6 +1358,8 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - `read_inst` upper-cases the inpars' table names but not the file names, so `JWST_NIRSPEC_G395H` never matches `R_JWST_NIRSpec_G395H.txt`.
   - Not acted on (see "Awaiting my OK"). On the M7 clean-up list (my decision, 2026-11-20).
 - 2026-11-20: **The AGN disc (DSK) takes the near-power-law part of the continuum** (46% of 5–6 µm in M5 step 2 and `hot1750`). A limitation of CAFE's dust components: a temperature gradient, which looks like a power law, has no component of its own. Not something to fix (my decision, 2026-11-20).
+- 2026-11-22: **With DSK free, HOT_TAU and COO_TAU still end at 8–9 despite the 0.1 starts** (NGC7469 NIRSpec + MIRI, `dskfree`: HOT_TAU 8.30, COO_TAU 8.93; `hot1750`: 8.24, 9.18). Like DSK's role, this is the single-temperature dust components being bent toward a power law. Part of the limitation above, not acted on (my decision, 2026-11-22).
+- 2026-11-22: **The NGC7469 NIRSpec + MIRI fits have two end states 2% apart in χ²** (M5, `hot1750` and `dskfree`). One has STR at 0 and DSK_TAU 0.09 (`hot1750`'s best, 200,549.87). The other has STR on and DSK_TAU 0.39 (3,924 higher). With the 0.1 starts, all three `dskfree` fits reach the STR-on state; `hot1750`'s starts reached the lower state in 7 of 10. Not acted on (my decision, 2026-11-22).
 - 2026-11-20: **`grainEQTemp` finds each grain's T_eq by inverting a table built on the T_bb values it is given** (`T = T_bb`, `interp1d` in log, extrapolating beyond the ends). So what `grainSizeDF` keeps at one T_bb depends on the other T_bb values in the same call. Example (AGN, carbon cut at 1400 K): 0.317 of the carbon mass at 1148.3 K on the fit's 30-point grid, 0.359 with T_bb = [996.9, 1027.2, 1148.3].
   - The fit always passes its fixed grid. Adding points to it leaves the values at its points unchanged (996.9–1521.3 K, both cuts), so the fit is not affected. Only direct calls with a short T_bb list are. Not acted on.
 - 2026-11-20: **The inpars comment `_HOT_TMP = 571.6 -> <HOT_TMP> = 1250K` is not reproduced** by the grain model. At T_bb = 571.6 K the mass-weighted mean T_eq of the surviving grains is 1196 K (silicates) and 926 K (carbon) for the AGN SED, and 1015 K and 988 K for the ISRF. For the clean-up list.
