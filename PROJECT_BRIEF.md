@@ -283,6 +283,9 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 
 ### M5 — Fits with real photometry *(approved 2026-11-19)*
 - Fits of a JWST spectrum together with real photometry. The fake-photometry setup is for functional checks only (CLAUDE.md §10).
+- **Open: photometry conventions** (logged 2026-11-23).
+  - Among them, WISE W4 for red sources (α ≥ 1): the catalogued flux is about 8–10% too high, and Brown et al. 2014 put the effective wavelength at 22.8 µm. Both describe the same discrepancy, so apply one, not both (WISE Explanatory Supplement, sec. IV.4.h).
+  - See W2246 below and "Biases".
 - Refit, with the G14 fix (`93a90dc`), my pre-sync fits that have a temperature on a G14 jump: 51 of 121 distinct fits, CLD_TMP at 6.351 K in 42 of the 91 with CLD free, mostly the CYGNUS fits (logged 2026-11-18; see "Biases", G14).
 - **The HOT–STB degeneracy** (decided 2026-11-19): goes here, with near-IR photometry, and to a NIRSpec + MIRI spectrum of NGC7469 (see "Later"). *(NIRSpec + MIRI part closed 2026-11-22: NIRSpec removes M4's MIRI-only valley; see the end of the NIRSpec + MIRI steps below.)*
 - **Step 1 (approved 2026-11-19): NGC7469 NIRSpec + MIRI with CRETA's single extraction** (see "Decisions"). *(Done 2026-11-19, waiting for my review; no fits. Work folder: `tests/M5/`, `extractions/NGC7469_NIRSpec+MIRI/`.)*
@@ -579,12 +582,20 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 
       - So the new spectrum rises by up to 23% relative to M3's from ch3 on, and falls by about 20% in ch1.
       - M3's spectrum differs in its cone (0.5″ at 5.4 µm, growing with λ: 1.8–2.5 FWHM), the background (none subtracted), the cubes (another reduction) and its stitching. Not separated.
+      - *(Not pursued, my decision 2026-11-23: this extraction supersedes M3's spectrum.)*
     - **Step 3, photometry** (W2246.txt, width 0; the stitched spectrum interpolated in log λ, as CAFE does for width 0):
       - 12.0 µm (ch3-short): measured 2.50 ± 0.20 mJy, spectrum 2.03 mJy, ratio 0.81 ± 0.07.
       - 22.0 µm (ch4-medium): measured 15.9 ± 1.6 mJy, spectrum 11.05 mJy, ratio 0.70 ± 0.07.
       - Expected without aperture correction: 0.94 for a Gaussian PSF (6.25% outside a one-FWHM cone), 0.83 for an Airy pattern (17%).
       - The annulus at 2 FWHM also removes the wings' light there. The absolute level is set by ch2-short's cone, the stitching reference.
       - The points are approximate: single wavelengths, without WISE's response curves.
+      - **W4's red-source issue** (logged 2026-11-23, checked against the WISE All-Sky Explanatory Supplement, sec. IV.4.h, last updated 2017; see "Biases"):
+        - For steeply rising spectra (F_ν ∝ ν^−α with α ≥ 1), the catalogued W4 flux is about 8–10% too high. W2246's spectrum has α = 2.1 over 20–24 µm.
+        - With W4 decreased by 8% or 10%, the 22 µm ratio becomes 0.76 ± 0.08 or 0.77 ± 0.08. The spectrum at 22.8 µm, Brown et al. 2014's effective wavelength, gives 0.76 ± 0.08 against W4 as catalogued.
+        - So both points are about 0.8 (0.81 ± 0.07 and 0.76–0.77 ± 0.08), consistent with one aperture-correction factor.
+        - To be handled with M5's photometry conventions (see the open item at the top of M5).
+    - **ch1-short is unreliable for W2246 and is left out of its fits** (my decision, 2026-11-23). It is barely detected (median 0.011 mJy unstitched, 0.018 mJy stitched), 24% of its channels are negative, and its overlap ratio of 1.65 (the lowest S/N, 7.3) sets its stitching.
+    - No fit of W2246 until its PSF arrives (my decision, 2026-11-23).
     - Cost (information only): the extraction took 26 s.
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
@@ -968,7 +979,7 @@ cd /Users/tanio/pywork/cafe_work && tests/M5/fwhm/run_regressions.sh   # M5: NGC
 cd /Users/tanio/pywork/cafe_work && ~/miniforge3/envs/cafe-dev/bin/python -W ignore tests/M5/fwhm/compare_extractions.py extractions/NGC7469_NIRSpec+MIRI_fwhm_before extractions/NGC7469_NIRSpec+MIRI_fwhm_after   # M5: before/after identical; likewise tests/M3/out/d6/fwhm_{before,after}_{single_all,single_all_bkgsub,grid_all}; and cmp of every .fits (log tests/M5/logs/fwhm_regression_compare.txt)
 cd /Users/tanio/pywork/cafe_work && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python tests/M5/extract_W2246.py cubes_miri_mast_c1003 W2246_MIRI_c1003_bkg W2246_MIRI_r0.2842as_bkg_params.txt > tests/M5/logs/extract_W2246_c1003_bkg.txt 2>&1   # M5: W2246, c1003 cubes, one-FWHM cone, two-FWHM annulus, centring at 8.0 um, stitching to ch2-short
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore bkg_extraction_check.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003_bkg/W2246_MIRI_SingleExt_r0.2842as.csv > ../logs/bkg_extraction_check_W2246_c1003.txt   # M5: background per band, NaN planes, overlap ratios with S/N, stitched signs, ch4-long beyond 27 um
-cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore step3_compare.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003_bkg/W2246_MIRI_SingleExt_r0.2842as.csv > ../logs/step3_compare_W2246_c1003.txt   # M5: step 3, shape against M3's spectrum (normalised in ch2-short) and the 12.0 and 22.0 um points
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore step3_compare.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003_bkg/W2246_MIRI_SingleExt_r0.2842as.csv > ../logs/step3_compare_W2246_c1003.txt   # M5: step 3, shape against M3's spectrum (normalised in ch2-short), the 12.0 and 22.0 um points, and W4's red-source correction both ways
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
@@ -1371,6 +1382,14 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Stop before using the stitched spectrum if any overlap ratio is ≤ 0 or has S/N < 3. Otherwise do step 3:
     - the shape against M3's spectrum, normalised, since the apertures and reductions differ;
     - the 12.0 and 22.0 µm points, approximately. Without aperture correction, the spectrum should come out low by the fraction of the PSF outside a one-FWHM cone.
+- 2026-11-23: **W2246 after its first extraction with a local background** (see M5):
+  - **ch1-short is unreliable** and is left out of W2246's fits. It is barely detected, 24% of its channels are negative, and its overlap ratio of 1.65 sets its stitching.
+  - **M3's spectrum is superseded** by this extraction (`extractions/W2246_MIRI_c1003_bkg/`). The shape differences between them are not pursued.
+  - **At 22 µm,** the spectrum/photometry ratio (0.70) is likely lowered by W4's known red-source issue: an effective wavelength of about 22.8 µm, and catalogued fluxes about 8–10% too high for steeply rising spectra (Wright et al. 2010; Brown et al. 2014; checked against the Explanatory Supplement).
+    - It is to be handled with M5's photometry conventions.
+    - With it, both points are about 0.8, consistent with one aperture-correction factor.
+  - **No fit until the PSF arrives.**
+  - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1611,7 +1630,13 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - One annulus (`r_ann_in`, `ann_width`) is used at every wavelength and in every cube, even for a point source. The lines that would scale it with wavelength for point sources are commented out.
   - With a cone that grows with wavelength, the annulus must start beyond the largest cone radius and still fit inside the smallest field.
   - W2246 (`c1003`, 0.5″ cone at 5.4 µm, centred at 8.0 µm): the cone reaches 2.657″ at 28.7 µm, while the largest circle inside the field is 1.89–1.96″ in ch1, 2.30–2.33″ in ch2 and 2.50–2.62″ in ch3. No annulus fits; each band alone has room for one. Check: `tests/M5/W2246/annulus_check.py`. Not acted on. *(2026-11-23: changed for point sources by commit `9017022`, awaiting my review; see "Awaiting my OK".)*
-- 2026-11-23: **MAST `c1003` ch4-long of W2246 goes negative beyond 27 µm** (median −94 mJy at 27.5–28 µm, −350 mJy at 28–28.5 µm in the 0.5″ cone). Stage3 is negative only at 28–28.5 µm (−75 mJy). Not acted on.
+- 2026-11-23: **MAST `c1003` ch4-long of W2246 goes negative beyond 27 µm** (median −94 mJy at 27.5–28 µm, −350 mJy at 28–28.5 µm in the 0.5″ cone). Stage3 is negative only at 28–28.5 µm (−75 mJy). Not acted on. *(2026-11-23: with the local annulus, ch4-long beyond 27 µm is positive; see M5, W2246.)*
+- 2026-11-23: **WISE W4 overestimates red sources** (WISE All-Sky Explanatory Supplement, sec. IV.4.h, last updated 2017-08-07; read on IRSA).
+  - For F_ν ∝ ν^−α with α ≥ 1, the catalogued W4 flux needs about an 8–10% correction downward; the Supplement's example decreases it by 8%. The stated cause is the uncertain calibration of W4's relative spectral response.
+  - Brown et al. (2014, PASA 31, 49) explain the residuals by scaling the W4 response's wavelengths by 1.033, which puts W4's effective wavelength at 22.8 µm (nominal isophotal 22.08 µm). They caution that this may not be unique.
+  - The Supplement presents the flux correction and the wavelength shift as ways of handling the same discrepancy, so apply one, not both (my reading; the page does not say so explicitly).
+  - Wright et al. (2010) also found red sources too faint in W3, by 17%. The Supplement's correction is for W4 only. Not acted on.
+  - For W2246 (α = 2.1 at 20–24 µm), the 22 µm ratio becomes 0.76–0.77 either way (M5). To be handled with M5's photometry conventions (my decision, 2026-11-23).
 - 2026-11-20: **`grainEQTemp` finds each grain's T_eq by inverting a table built on the T_bb values it is given** (`T = T_bb`, `interp1d` in log, extrapolating beyond the ends). So what `grainSizeDF` keeps at one T_bb depends on the other T_bb values in the same call. Example (AGN, carbon cut at 1400 K): 0.317 of the carbon mass at 1148.3 K on the fit's 30-point grid, 0.359 with T_bb = [996.9, 1027.2, 1148.3].
   - The fit always passes its fixed grid. Adding points to it leaves the values at its points unchanged (996.9–1521.3 K, both cuts), so the fit is not affected. Only direct calls with a short T_bb list are. Not acted on.
 - 2026-11-20: **The inpars comment `_HOT_TMP = 571.6 -> <HOT_TMP> = 1250K` is not reproduced** by the grain model. At T_bb = 571.6 K the mass-weighted mean T_eq of the surviving grains is 1196 K (silicates) and 926 K (carbon) for the AGN SED, and 1015 K and 988 K for the ISRF. For the clean-up list.
