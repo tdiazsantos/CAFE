@@ -1675,6 +1675,14 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Then rerun the 3 fits with the lines unmasked and report both runs side by side.
   - *(2026-11-23: set up in `inpars_jwst_miri_W2246_M5_spec_lines.ini`, with a work-folder copy of my H table that has those three lines at MASK = 0.)*
   - *(Stopped before fitting: `EPSGamma_LIN_N = 400` km/s caps each width at 400 km/s, which would stop a broad line. See M5.)*
+  - *(Replaced 2026-11-23 by the next entry.)*
+- 2026-11-23: **W2246's lines, final choice** (W2246's setup; it replaces my previous line choices above).
+  - Paβ, Paα and Brα each get a narrow and a broad component: their double-component flag is set in the work-folder copy of my H table. Every other line and opacity feature stays masked.
+  - **Narrow components:** widths free up to 400 km/s; centres fixed at z = 4.601.
+  - **Broad components:** widths free up to 3,000 km/s; centres free within ±1,500 km/s of z = 4.601.
+  - **`force_all_lines = True`.** With every other line masked, it forces only these three lines.
+  - Show the copy's diff against my files and every resulting bound in km/s. Stop before fitting if CAFE can't set the narrow and broad components' options separately as stated.
+  - Then 3 plain fits (j = 0, 1, 2), reported next to the first run (lines masked).
   - **No fit until the PSF arrives.**
   - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
