@@ -533,6 +533,7 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 
 ### CRETA aperture-correction path (separate item, not a milestone)
 - G10, G11 and G11's two related problems (see "GOALS bugs found after M2"): fixed and tested end to end together once CRETA's PSF cubes are found, not with stand-in PSFs.
+- **For W2246, when its PSF arrives** (my decision, 2026-11-23): compute the aperture correction with the same cone and the same background annulus as the data. MIRI's real PSF wings put some of the source's light in the annulus, so the PSF must lose the same annulus background.
 
 ### Later (do not start)
 - Tests and CI.
@@ -1253,6 +1254,14 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Test it on synthetic data with known truth: a point source on a known, spatially flat background of either sign, in cubes with small fields. The background must be recovered and the source flux unchanged.
   - For W2246: which cone radius at 5.4 µm is about one FWHM of MIRI's PSF there, and whether the annulus then fits in all 12 bands.
   - *(Done 2026-11-23: commit `9017022`, waiting for my review; the multiple and the minimum under "Awaiting my OK".)*
+- 2026-11-23: **Commit `9017022` approved:** CRETA's per-plane annulus for point sources, with the multiple 2 (`r_ann_in = 2 × user_r_ap`) and a minimum of 50 valid annulus pixels per plane.
+  - For when W2246's PSF arrives: compute the aperture correction with the same cone and annulus as the data. MIRI's real PSF wings put some of the source's light in the annulus (see "CRETA aperture-correction path").
+  - Next, its own commit on top of `9017022` for my review, with the W2246 extraction on hold: for point sources, scale the cone and the annulus's inner radius with the PSF's FWHM instead of with wavelength, r(λ) = r_ap × FWHM(λ) / FWHM(λ_ap), so the aperture stays a fixed number of FWHM.
+    - One FWHM function per instrument, chosen from the cube. MIRI MRS follows Law et al. 2023: FWHM = 0.033″ (λ/µm) + 0.106″.
+    - NIRSpec: FWHM ∝ λ, so its behaviour is unchanged until I choose a NIRSpec law.
+    - FWHM(λ_ap) comes from the instrument that covers λ_ap. Extended sources unchanged.
+  - Test it on synthetic data with known truth: Gaussian point sources whose FWHM follows Law et al. The fraction of flux in the cone must be the same at every wavelength, and is shown varying before the change. NGC7469's extractions must stay bit-identical.
+  - For W2246, r_ap = 0.2842″ at 5.4 µm (one FWHM) and r_ann_in = 0.5684″ (two FWHM): say how they fit in all 12 bands.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1393,6 +1402,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - The median of N pixels has an error of about 1.25σ/√N per plane. Cube pixels are correlated (the pipeline's covariance prefactor is 1.8, so about N/3 are independent), so 50 pixels give about 0.3σ.
     - A plane with fewer, or with no room for an annulus, gets a NaN background and so a NaN flux, and CRETA prints how many planes per band. A round number, not set from W2246 (whose smallest plane has 98).
   - **For W2246:** a cone of 0.28″ at 5.4 µm is about one FWHM there (0.284″; Law et al. 2023, Eq. 1: FWHM = 0.033 (λ/µm) + 0.106″). It grows to 1.49″ (1.41 FWHM) at 28.7 µm.
+  - *(Decided 2026-11-23: `9017022` approved, with the multiple 2 and the 50-pixel minimum; see "Decisions".)*
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
