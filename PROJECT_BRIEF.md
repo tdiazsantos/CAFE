@@ -486,6 +486,22 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
       - The cause is the negative leftover background summed over the whole field (about −1.3 mJy in ch1-short, −55 mJy in ch4-long).
     - **Against CRETA's `c1003` extraction** (at M3's position, 0.138″ from the 8.0 µm one; unstitched; bands where both medians are positive): x1d/CRETA 3.97 (ch2-short), 2.07, 1.54, 1.35, 1.42, 1.33, 1.15 and 1.67 (ch4-medium).
       - Not a calibration test: the whole field against a 0.5″ cone. In ch2-short the leftover background over the field (+1.6 mJy) is most of the x1d's 1.98 mJy, while W2246 gives 0.44 mJy in the cone.
+  - **CRETA's per-plane annulus for point sources, commit `9017022`** (2026-11-23, my request; waiting for my review; see "Awaiting my OK").
+    - **The change:** with `point_source = True` and background subtraction on, each plane's annulus starts at `r_ann_in` scaled with wavelength like the cone, and ends at the largest circle around the source inside the cube's field (`getFieldRadii`).
+      - A plane whose annulus has fewer than 50 valid pixels, or no room, gets a NaN background and flux.
+      - Extended sources keep the fixed annulus.
+    - **Synthetic test** (`tests/M5/annulus/test_point_source_annulus.py`):
+      - Setup: four MIRI-like bands of 41×41 pixels with small rectangular fields; a 1 mJy Gaussian point source (FWHM from Law et al. 2023); a flat background of +3, −3 or 0 MJy/sr × λ/5.4 µm, with and without noise of 1 MJy/sr per pixel; a 0.3″ cone at 5.4 µm with `r_ann_in = 0.6″`.
+      - Result: 17/17 checks pass.
+        - Background recovered to 4×10⁻¹⁶ MJy/sr, and the flux with the background on equals the flux with it off, to 3.6×10⁻⁸.
+        - The NaN planes are exactly those with fewer than 50 annulus pixels, counted from the geometry: 147 of 281 in ch1-long and all 316 in ch2-short, which has no room.
+        - With noise: the background error has mean +0.02 ± 0.04 and rms 1.02 × 1.25σ/√N; the flux error has mean +0.17 ± 0.08 µJy.
+      - Before the change, CRETA stops on the same cubes with photutils' `'r_out' must be greater than 'r_in'`.
+    - **Regression:** the real NGC7469 single extractions of M3 (`single_all.txt`, no background; `single_all_bkgsub.txt`, extended source with background) are identical before (`96dced6`) and after (`.fits`, `_cube.fits` and the `.csv` table).
+    - **W2246, read only** (`W2246/annulus_fit_fwhm.py`; cone 0.28″ at 5.4 µm, multiple 2, centred at 8.0 µm):
+      - The annulus fits in all 12 bands, in every plane with data: at least 98 valid pixels (ch4-long), 172–690 in the others.
+      - ch4-long's last 12 planes (28.633–28.699 µm) have no data at all.
+      - The largest multiple with at least 50 pixels everywhere is 2.2, set by ch4-long.
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
@@ -855,6 +871,10 @@ cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore annulus_check.py > ../logs/annulus_check_W2246_c1003.txt   # M5: CRETA's centring at 8.0 µm in c1003; whether one fixed annulus fits outside the 0.5″ cone and inside every cube's field
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python -W ignore x1d_check.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003/W2246_MIRI_SingleExt_r0.5as.fits > ../logs/x1d_check_W2246_c1003.txt   # M5: the pipeline's c1003 x1d per band (source type, area, background column, flux) and against CRETA's c1003 extraction
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python -W ignore x1d_background_check.py > ../logs/x1d_background_check_W2246_c1003.txt   # M5: what the x1d BACKGROUND column holds; FLUX against the whole-cube sum
+cd /Users/tanio/pywork/cafe_work/tests/M5/annulus && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore test_point_source_annulus.py /Users/tanio/Sync/pywork/CAFE > ../logs/test_point_source_annulus.txt 2>&1   # M5: CRETA's per-plane point-source annulus on synthetic cubes with known truth; before the change: the same from annulus/before/ with the checkout cmp/annulus_before (git archive of 96dced6's CRETA)
+cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore stitch_run.py /Users/tanio/Sync/pywork/CAFE single single_all_bkgsub.txt annulus_after_single_all_bkgsub   # M5: annulus regression; likewise single_all.txt, and annulus_before_* with /Users/tanio/pywork/cafe_work/cmp/annulus_before
+cd /Users/tanio/pywork/cafe_work/tests/M3/out/d6 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore ../../../M5/annulus/regression_compare.py annulus_before_single_all_bkgsub annulus_after_single_all_bkgsub   # M5: before/after identical (.fits, _cube.fits, .csv table); likewise single_all (log ../../../M5/logs/annulus_regression_compare.txt)
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore annulus_fit_fwhm.py > ../logs/annulus_fit_fwhm_W2246_c1003.txt   # M5: W2246, one-FWHM cone, multiple 2: annulus pixels per band, largest multiple with >= 50 everywhere
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
@@ -1232,6 +1252,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Say what happens in a plane where the annulus has too few pixels, and propose the multiple and the minimum number of pixels.
   - Test it on synthetic data with known truth: a point source on a known, spatially flat background of either sign, in cubes with small fields. The background must be recovered and the source flux unchanged.
   - For W2246: which cone radius at 5.4 µm is about one FWHM of MIRI's PSF there, and whether the annulus then fits in all 12 bands.
+  - *(Done 2026-11-23: commit `9017022`, waiting for my review; the multiple and the minimum under "Awaiting my OK".)*
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1363,6 +1384,15 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - **Fixed at 0:** the disc drops out, and COO_TMP sits at its 50 K bound. χ² is 50,414 higher.
   - **Free:** the disc keeps 46% of the 5–6 µm continuum, and DSK_TAU ends at 0.39. With the 0.1 starts, the three fits all ended in `hot1750`'s STR-on state, 3,924 above its best.
   - *(Decided 2026-11-22: `0.1, True, 0., 0.5` in `miri_AGN`, `nirspec-miri_AGN` and `SB_and_AGN`; commit `72e9edd`.)*
+- 2026-11-23: **CRETA's per-plane annulus for point sources, commit `9017022`: the change itself, the multiple and the minimum** (see M5, W2246).
+  - **The multiple:** 2, so `r_ann_in = 2 × user_r_ap` (0.56″ with W2246's 0.28″ cone). Recommended.
+    - The annulus starts at 2 cone radii: 2 FWHM at 5.4 µm and 2.8 FWHM at 28.7 µm, since the cone grows faster than the FWHM. That is beyond the PSF's core and first ring (about 1.2 FWHM for an Airy pattern; an inference, not MIRI's measured PSF).
+    - W2246's ch4-long allows at most 2.2 (with 50 pixels), so a larger multiple would not fit.
+    - MIRI's real PSF has wings beyond a Gaussian. Their light in the annulus lowers the flux, by an unknown amount until the PSF arrives (for a Gaussian, 3×10⁻⁸ of it).
+  - **The minimum:** 50 valid pixels per plane (`MIN_ANNULUS_PIXELS`, `cube_handler.py`). Recommended.
+    - The median of N pixels has an error of about 1.25σ/√N per plane. Cube pixels are correlated (the pipeline's covariance prefactor is 1.8, so about N/3 are independent), so 50 pixels give about 0.3σ.
+    - A plane with fewer, or with no room for an annulus, gets a NaN background and so a NaN flux, and CRETA prints how many planes per band. A round number, not set from W2246 (whose smallest plane has 98).
+  - **For W2246:** a cone of 0.28″ at 5.4 µm is about one FWHM there (0.284″; Law et al. 2023, Eq. 1: FWHM = 0.033 (λ/µm) + 0.106″). It grows to 1.49″ (1.41 FWHM) at 28.7 µm.
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
@@ -1454,7 +1484,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-23: **CRETA's background annulus is fixed in arcsec** (`doBackgroundSubtraction`, `cube_handler.py`).
   - One annulus (`r_ann_in`, `ann_width`) is used at every wavelength and in every cube, even for a point source. The lines that would scale it with wavelength for point sources are commented out.
   - With a cone that grows with wavelength, the annulus must start beyond the largest cone radius and still fit inside the smallest field.
-  - W2246 (`c1003`, 0.5″ cone at 5.4 µm, centred at 8.0 µm): the cone reaches 2.657″ at 28.7 µm, while the largest circle inside the field is 1.89–1.96″ in ch1, 2.30–2.33″ in ch2 and 2.50–2.62″ in ch3. No annulus fits; each band alone has room for one. Check: `tests/M5/W2246/annulus_check.py`. Not acted on.
+  - W2246 (`c1003`, 0.5″ cone at 5.4 µm, centred at 8.0 µm): the cone reaches 2.657″ at 28.7 µm, while the largest circle inside the field is 1.89–1.96″ in ch1, 2.30–2.33″ in ch2 and 2.50–2.62″ in ch3. No annulus fits; each band alone has room for one. Check: `tests/M5/W2246/annulus_check.py`. Not acted on. *(2026-11-23: changed for point sources by commit `9017022`, awaiting my review; see "Awaiting my OK".)*
 - 2026-11-23: **MAST `c1003` ch4-long of W2246 goes negative beyond 27 µm** (median −94 mJy at 27.5–28 µm, −350 mJy at 28–28.5 µm in the 0.5″ cone). Stage3 is negative only at 28–28.5 µm (−75 mJy). Not acted on.
 - 2026-11-20: **`grainEQTemp` finds each grain's T_eq by inverting a table built on the T_bb values it is given** (`T = T_bb`, `interp1d` in log, extrapolating beyond the ends). So what `grainSizeDF` keeps at one T_bb depends on the other T_bb values in the same call. Example (AGN, carbon cut at 1400 K): 0.317 of the carbon mass at 1148.3 K on the fit's 30-point grid, 0.359 with T_bb = [996.9, 1027.2, 1148.3].
   - The fit always passes its fixed grid. Adding points to it leaves the values at its points unchanged (996.9–1521.3 K, both cuts), so the fit is not affected. Only direct calls with a short T_bb list are. Not acted on.
