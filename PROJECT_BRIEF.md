@@ -1445,6 +1445,18 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Update the parameter-file comments, README and DESIGN.md; adapt the synthetic annulus test (fixed width, pull-in, 20-pixel minimum); NGC7469's extractions must stay byte-identical.
   - For W2246, with r_ap = 0.4263″ and r_ann_in = 0.8526″ (3 FWHM) at 5.4 µm: per band, the cone, the ring's inner and outer edges (and where it was pulled in), the fewest pixels and any NaN planes.
   - *(Done 2026-11-23: commit `2383c67`, waiting for my review; my choices in it are under "Awaiting my OK".)*
+- 2026-11-23: **Commit `2383c67` approved**, with its three choices: `ann_width` ≤ 0 with a point source stops with a `ValueError`; "no room" means the fitted inner edge inside the largest cone radius; and the per-band messages.
+  - **Next, step 1:** re-extract W2246 from the `c1003` cubes:
+    - centring at 8.0 µm with CRETA's centring; `point_source = True`, r_ap = 0.4263″ at 5.4 µm (1.5 FWHM);
+    - background on with r_ann_in = 0.8526″ (3 FWHM) and `ann_width` = 1.0″; no aperture correction; `stitch_band = ch2-short`.
+    - Report the background removed per band (median), the raw overlap ratios with their S/N, the NaN planes per band, and whether any stitched band is negative.
+    - Stop before using the stitched spectrum if any overlap ratio is ≤ 0 or has S/N < 3.
+  - **Then, step 2:** prepare W2246's spectrum-only fit (no photometry) and show me the setup, with no fits yet:
+    - the new spectrum without ch1-short, and z;
+    - my `inpars_jwst_miri+phot_W2246.ini` and its five tables. How its continuum settings differ from the current shipped rules (T ranges, the 0.1 starts of the optical depths, HOT_TMP up to 1750 K, DSK_TAU free up to 0.5), and which components are free;
+    - which components the rest-frame range (about 1.0–5.1 µm) can't constrain;
+    - the opt file, and the number of free parameters.
+  - Then stop for my choices.
   - **No fit until the PSF arrives.**
   - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
@@ -1600,6 +1612,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - **"No room" means the fitted inner edge lies inside the largest cone radius in that plane.** An edge exactly on the cone is allowed. With several aperture radii, the largest one counts.
   - **Messages:** CRETA prints the planes pulled in and those without room, per band. The under-20-pixels message no longer counts the no-room planes, which have their own.
   - Seen in the synthetic test: a ring pulled in to just outside the cone holds the PSF's wings, which lower the flux (a Gaussian: 0.7–1.5%). For W2246 the pulled-in rings stay at least 2.47 FWHM out.
+  - *(Decided 2026-11-23: `2383c67` approved with the three choices; see "Decisions".)*
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
