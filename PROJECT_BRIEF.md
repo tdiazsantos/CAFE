@@ -676,6 +676,75 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
       - That ratio enters only ch1-short's own stitching factor (6.15). Every other band's factor (0.92–1.15) matches the product of the other ratios and does not use it (`stitch_factors_W2246_c1003_ring.txt`). ch1-short is already left out of W2246's fits.
     - **Stitched bands:** no band's median is negative. Negative channels: 35% in ch1-short, 5% in ch1-medium, 4% in ch4-long, 0 elsewhere.
     - ch4-long beyond 27 µm is positive (21–50 mJy unstitched per 0.5 µm).
+    - *(2026-11-23: going on with the stitched spectrum without ch1-short, my decision; see "Decisions".)*
+  - **W2246's spectrum-only fit: the setup, no fit** (2026-11-23, my request, step 2; `tests/M5/W2246/fit_setup.py`, log `logs/fit_setup_W2246.txt`; my choices are under "Awaiting my OK").
+    - **Spectrum:** `data/W2246/spectra/W2246_MIRI_r0.4263as_ring_noch1s_cube.fits`.
+      - It is the ring extraction's `_cube.fits` with ch1-short's 1,050 channels removed from every extension (`W2246/drop_band.py`). The stitched fluxes of the other bands are identical; only NAXIS1 changes.
+      - CAFE reads it as `fit_spec` does (`read_spec` with its default trim, which keeps the shorter band in each overlap; DQ used; then `mask_spec`): 9,907 channels, 9,895 after masking.
+      - Rest range 1.0106–5.1111 µm at z = 4.601: ch1-medium 1.011–1.184 … ch4-long 4.371–5.111 µm (observed 5.660–28.627 µm).
+    - **z (for me to choose):**
+      - 4.601 from [CII] (Díaz-Santos et al. 2016); 4.593 from UV and optical lines (quoted by Fan et al. 2018).
+      - M3 used 4.6. My pre-sync notebook's active line is 4.507, with 4.601 commented out.
+      - The parameter count and the range do not depend on it: 17 free at 4.593, 4.6 and 4.601; the range shifts by < 0.01 µm.
+    - **Inpars:** my `inpars_jwst_miri+phot_W2246.ini` (pre-sync, read only).
+      - Its five tables: `lines.atomic_W2246.txt`, `lines.molecular_W2246.txt`, `lines.H_recombination_W2246.txt`, `pah_template_W2246.txt` and `opacity/gauss_opacity_W2246.ecsv`.
+      - They reach `dev` through `tests/M5/W2246/cafe_dir_W2246/` (`W2246/make_cafe_dir.py`: links to every current `dev` table plus the five).
+      - **In the rest range, every line and opacity feature in them has MASK = 1, so CAFE fits none.** That is the 1 atomic line ([O I] 1.317 µm), all 72 H₂ lines, all 68 H recombination lines (Paβ, Paα, Brα among them), and the 5 ice and CO features. The only feature left is the 3.3 µm PAH (`d0_PAH33_32890`).
+    - **Against the shipped `inpars_jwst_miri_AGN.ini`:**
+      - Sources: COO and WRM are heated by the AGN SED (shipped: ISRF); HOT by the AGN in both.
+      - T ranges:
+
+        | Parameter | W2246 | Shipped |
+        |---|---|---|
+        | CIR_TMP | 3.74, free in [0, 5] | fixed |
+        | CLD | on: FLX 0.1 free in [0, 20], TMP 10 free in [5, 25] | off |
+        | COO_TMP | [25, 100] | [3, 50] |
+        | WRM_TMP | 150 in [100, 300] | 135 in [50, 200] |
+        | HOT_TMP | 500 in [300, 1027.2] | 500 in [200, 1750] |
+
+      - Optical depths:
+
+        | Parameter | W2246 | Shipped |
+        |---|---|---|
+        | COO_TAU | 1, fixed | 0.1, free |
+        | WRM_TAU | 4 | 0.1 |
+        | HOT_TAU | 1 | 0.1 |
+        | STB_TAU | 1 | 0.1 |
+        | DSK_TAU | 0.1, free in [0, 2] | 0.1, free in [0, 0.5] |
+
+      - FLX starts: WRM 0.1 (0.3), HOT 0.5 (0.3), STB 0.01 (0.2), DSK 0.001 (0.15).
+      - Lines: `FitWave0_LIN_B`, `FitGamma_LIN_B` and `FitVgrad` are False (shipped True), `EPSVgrad` is 200 (100). With no lines fitted, these have no effect.
+    - **Free:** 17 of 46 parameters.
+      - The continuum's 16: CIR_TMP, CLD_FLX, CLD_TMP, COO_FLX, COO_TMP, WRM_FLX, WRM_TMP, WRM_TAU, HOT_FLX, HOT_TMP, HOT_TAU, STB_FLX, STB_TAU, STB_010, DSK_FLX and DSK_TAU.
+      - Plus the 3.3 µm PAH's peak.
+      - Fixed: CIR_FLX = 0 (CIR off), STR off, COO_TAU = 1, PAH_FLX = 1, and PAH_TAU = WRM_TAU (an expression).
+    - **What the range can and cannot constrain** (CAFE's model at the start, and each far-IR component at its upper bounds with no extinction):
+      - At the start, HOT is 96% of the model in the range (86% at the blue end, 81% at the red end); DSK 1.4% (9% at the blue end); STB 1.2% (4.5%); WRM 18% at the red end.
+      - **CIR:** at most 3×10⁻³⁶ of the data, and its FLX is fixed at 0, so its free TMP has no effect.
+      - **CLD:** at most 5×10⁻⁸ of the data. Not constrained.
+      - **COO:** at most 1.05× the data, only at 5.05 µm and at FLX 2, 100 K; negligible at its 40 K start. Only weakly constrained, at the red end.
+      - **WRM** (AGN-heated, up to 300 K): up to 197× the data at 1.03 µm at FLX 2, 300 K, so it overlaps HOT.
+      - **Optical depths:** WRM_TAU also sets PAH_TAU. HOT_TAU, STB_TAU and DSK_TAU act only through the extinction curve below 5.1 µm, against the temperatures and the stellar mix.
+      - **The FLX scale** of CIR, CLD, COO, WRM, DSK and PAH: their reference wavelengths (450, 70, 24, 14, 10 and 6.22 µm) lie beyond the data. CAFE's `flux0` then takes the last 20 channels (9.447 mJy at about 5.1 µm), so their [0, 2] bounds are relative to that. HOT's `flux0` at 3.5 µm is 1.760 mJy, STB's at 2 µm 0.330 mJy.
+    - **Opt file:** `dev`'s `default_opt.cafe`, as in the M5 NGC7469 fits and my notebook. `FitPhot` False, ftol 1e-5, `SPEC_UNC_FLOOR` 0.01, `FIT_CHK` True, `MAX_LOOPS` 5, `ExtOrAbs` 'EXT', `Draine_Or_OHMc` 'OHMc'; reference wavelengths as above.
+    - **Channel-to-channel scatter against CRETA's quoted errors** (rest-frame spectrum as read; scatter = 1.4826 MAD of successive differences / √2):
+
+      | Band | Median S/N | Scatter / quoted error | With the 1% floor |
+      |---|---|---|---|
+      | ch1-medium | 7 | 1.96 | 1.95 |
+      | ch1-long | 13 | 1.89 | 1.87 |
+      | ch2-short | 39 | 1.92 | 1.77 |
+      | ch2-medium | 79 | 2.31 | 1.78 |
+      | ch2-long | 107 | 2.16 | 1.47 |
+      | ch3-short | 287 | 3.09 | 0.98 |
+      | ch3-medium | 320 | 3.58 | 1.05 |
+      | ch3-long | 291 | 3.18 | 1.03 |
+      | ch4-short | 206 | 3.48 | 1.51 |
+      | ch4-medium | 122 | 6.03 | 3.80 |
+      | ch4-long | 35 | 3.59 | 3.37 |
+
+      - So the quoted errors are 2–6× too small. With the 1% floor (σ_fit = √(σ² + (0.01 F)²)), ch3 matches the scatter, but ch1–ch2 stay 1.5–2× low and ch4-medium and ch4-long 3.4–3.8× low.
+      - If adjacent channels are correlated, the successive-difference scatter underestimates the noise, so these ratios are lower limits.
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
@@ -1064,6 +1133,9 @@ cd /Users/tanio/pywork/cafe_work && tests/M5/fwhm/run_regressions.sh /Users/tani
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore ring_fit.py > ../logs/ring_fit_W2246_c1003.txt   # M5: W2246's ring per band as CRETA sets it (cone 0.4263", r_ann_in 0.8526", ann_width 1.0" by default)
 cd /Users/tanio/pywork/cafe_work && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python tests/M5/extract_W2246.py cubes_miri_mast_c1003 W2246_MIRI_c1003_ring W2246_MIRI_r0.4263as_ring_params.txt > tests/M5/logs/extract_W2246_c1003_ring.txt 2>&1   # M5: W2246 with the 1.5-FWHM cone and the 1" ring from 3 FWHM
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore bkg_extraction_check.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003_ring/W2246_MIRI_SingleExt_r0.4263as.csv > ../logs/bkg_extraction_check_W2246_c1003_ring.txt   # M5: its backgrounds, overlap ratios with S/N, NaN planes, stitched signs (the stitching-factor check per band: inline, log ../logs/stitch_factors_W2246_c1003_ring.txt)
+cd /Users/tanio/pywork/cafe_work && ~/miniforge3/envs/cafe-dev/bin/python -W ignore tests/M5/W2246/drop_band.py extractions/W2246_MIRI_c1003_ring/W2246_MIRI_SingleExt_r0.4263as_cube.fits data/W2246/spectra/W2246_MIRI_r0.4263as_ring_noch1s_cube.fits ch1_SHORT   # M5: W2246's spectrum without ch1-short (fails if the output exists)
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python make_cafe_dir.py   # M5: cafe_dir for W2246 on dev: links to dev's tables plus my five W2246 tables (pre-sync)
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore fit_setup.py > ../logs/fit_setup_W2246.txt 2>&1   # M5: W2246's spectrum-only fit setup, no fit (z = 4.601 by default; logs fit_setup_W2246_z4.593.txt and _z4.6.txt with the z as argument)
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
@@ -1497,6 +1569,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - which components the rest-frame range (about 1.0–5.1 µm) can't constrain;
     - the opt file, and the number of free parameters.
   - Then stop for my choices.
+- 2026-11-23: **W2246 step 2 goes on with the stitched spectrum without ch1-short.** The failed ch1-short → ch1-medium ratio sets only ch1-short's own factor, and ch1-short is excluded. In the setup, give per band the ratio of the channel-to-channel scatter to CRETA's quoted errors, since the fit weights by those errors. *(Done 2026-11-23; see M5.)*
   - **No fit until the PSF arrives.**
   - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
@@ -1653,6 +1726,17 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - **Messages:** CRETA prints the planes pulled in and those without room, per band. The under-20-pixels message no longer counts the no-room planes, which have their own.
   - Seen in the synthetic test: a ring pulled in to just outside the cone holds the PSF's wings, which lower the flux (a Gaussian: 0.7–1.5%). For W2246 the pulled-in rings stay at least 2.47 FWHM out.
   - *(Decided 2026-11-23: `2383c67` approved with the three choices; see "Decisions".)*
+- 2026-11-23: **W2246's spectrum-only fit: choices before any fit** (see M5, "W2246's spectrum-only fit: the setup").
+  - **z:** 4.601 ([CII]), 4.593 (UV and optical), or 4.6 (M3).
+  - **Lines and opacity features:** every one in the range is masked (MASK = 1) in my W2246 tables, so only the continuum and the 3.3 µm PAH would be fitted. Paα, Paβ and Brα (broad in W2246) would stay in the residuals.
+  - **Components the range cannot constrain:** CIR_TMP is free with CIR off (no effect); CLD is free but invisible. COO is visible only at its 100 K bound, at the red end. Fix or turn them off for a spectrum-only fit?
+  - **WRM:** AGN-heated up to 300 K, it can emit far more than the data even at 1 µm, so it overlaps HOT. Keep its source and range?
+  - **My W2246 settings or the shipped rules:**
+    - the T ranges (COO 25–100 K, WRM 100–300 K, HOT 300–1027.2 K, against 3–50, 50–200 and 200–1750 K);
+    - the optical-depth starts (1 or 4, against 0.1);
+    - DSK_TAU's upper bound (2, against 0.5).
+  - **Errors:** the channel-to-channel scatter is 2–6× CRETA's quoted errors. With the 1% floor it matches in ch3, but is 1.5–2× in ch1–ch2 and 3.4–3.8× in ch4-medium and ch4-long. The fit weights by these errors.
+  - **Opt file:** `default_opt.cafe`.
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
