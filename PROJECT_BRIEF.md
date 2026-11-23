@@ -286,6 +286,8 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 - **Open: photometry conventions** (logged 2026-11-23).
   - Among them, WISE W4 for red sources (α ≥ 1): the catalogued flux is about 8–10% too high, and Brown et al. 2014 put the effective wavelength at 22.8 µm. Both describe the same discrepancy, so apply one, not both (WISE Explanatory Supplement, sec. IV.4.h).
   - See W2246 below and "Biases".
+  - **Photometry enters a fit only once its origin is known: the bands, the instrument and the aperture** (my decision, 2026-11-23).
+    - W2246.txt names its points only `filter`. That its 12.0 and 22.0 µm points are WISE W3 and W4 is an inference.
 - Refit, with the G14 fix (`93a90dc`), my pre-sync fits that have a temperature on a G14 jump: 51 of 121 distinct fits, CLD_TMP at 6.351 K in 42 of the 91 with CLD free, mostly the CYGNUS fits (logged 2026-11-18; see "Biases", G14).
 - **The HOT–STB degeneracy** (decided 2026-11-19): goes here, with near-IR photometry, and to a NIRSpec + MIRI spectrum of NGC7469 (see "Later"). *(NIRSpec + MIRI part closed 2026-11-22: NIRSpec removes M4's MIRI-only valley; see the end of the NIRSpec + MIRI steps below.)*
 - **Step 1 (approved 2026-11-19): NGC7469 NIRSpec + MIRI with CRETA's single extraction** (see "Decisions"). *(Done 2026-11-19, waiting for my review; no fits. Work folder: `tests/M5/`, `extractions/NGC7469_NIRSpec+MIRI/`.)*
@@ -594,6 +596,7 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
         - With W4 decreased by 8% or 10%, the 22 µm ratio becomes 0.76 ± 0.08 or 0.77 ± 0.08. The spectrum at 22.8 µm, Brown et al. 2014's effective wavelength, gives 0.76 ± 0.08 against W4 as catalogued.
         - So both points are about 0.8 (0.81 ± 0.07 and 0.76–0.77 ± 0.08), consistent with one aperture-correction factor.
         - To be handled with M5's photometry conventions (see the open item at the top of M5).
+        - *(2026-11-23: this item and the "one aperture-correction factor" rest on the inference that W2246.txt's 12.0 and 22.0 µm points are WISE W3 and W4. The file's bands and origin are unknown. W2246 is fitted on its spectrum alone, with no W4 correction; see "Decisions".)*
     - **ch1-short is unreliable for W2246 and is left out of its fits** (my decision, 2026-11-23). It is barely detected (median 0.011 mJy unstitched, 0.018 mJy stitched), 24% of its channels are negative, and its overlap ratio of 1.65 (the lowest S/N, 7.3) sets its stitching.
     - No fit of W2246 until its PSF arrives (my decision, 2026-11-23).
     - Cost (information only): the extraction took 26 s.
@@ -1388,6 +1391,18 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - **At 22 µm,** the spectrum/photometry ratio (0.70) is likely lowered by W4's known red-source issue: an effective wavelength of about 22.8 µm, and catalogued fluxes about 8–10% too high for steeply rising spectra (Wright et al. 2010; Brown et al. 2014; checked against the Explanatory Supplement).
     - It is to be handled with M5's photometry conventions.
     - With it, both points are about 0.8, consistent with one aperture-correction factor.
+    - *(2026-11-23: this rests on the inference that the 12.0 and 22.0 µm points are WISE W3 and W4; the bands and origin of W2246.txt are unknown. See the next entry.)*
+- 2026-11-23: **W2246 is fitted on its spectrum alone**, with no scaling to photometry and no W4 correction.
+  - W2246.txt's photometry has unknown bands and origin. Photometry enters only once its origin is known (M5's photometry conventions).
+  - **The cone becomes 1.5 FWHM** (r_ap = 0.4263″ at 5.4 µm), because it captures more of the PSF.
+  - Next, a CRETA change as its own commit for my review, for point sources only:
+    - the background ring is a fixed 1.0″ wide (`ann_width`) at every wavelength;
+    - its inner edge scales with the FWHM like the cone (`r_ann_in` at `lambda_ap`);
+    - in each plane where inner edge + 1″ would leave the largest circle inside the field, the ring moves inward just enough for the full 1″ ring to fit;
+    - it never moves inside the cone. If the ring can't fit outside the cone, that plane's background is NaN, and CRETA says how many such planes there are;
+    - `MIN_ANNULUS_PIXELS` becomes 20.
+  - Update the parameter-file comments, README and DESIGN.md; adapt the synthetic annulus test (fixed width, pull-in, 20-pixel minimum); NGC7469's extractions must stay byte-identical.
+  - For W2246, with r_ap = 0.4263″ and r_ann_in = 0.8526″ (3 FWHM) at 5.4 µm: per band, the cone, the ring's inner and outer edges (and where it was pulled in), the fewest pixels and any NaN planes.
   - **No fit until the PSF arrives.**
   - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
@@ -1637,6 +1652,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - The Supplement presents the flux correction and the wavelength shift as ways of handling the same discrepancy, so apply one, not both (my reading; the page does not say so explicitly).
   - Wright et al. (2010) also found red sources too faint in W3, by 17%. The Supplement's correction is for W4 only. Not acted on.
   - For W2246 (α = 2.1 at 20–24 µm), the 22 µm ratio becomes 0.76–0.77 either way (M5). To be handled with M5's photometry conventions (my decision, 2026-11-23).
+  - *(2026-11-23: for W2246 this rests on the inference that its 22.0 µm point is WISE W4; W2246.txt's bands and origin are unknown. W2246 gets no W4 correction; see "Decisions".)*
 - 2026-11-20: **`grainEQTemp` finds each grain's T_eq by inverting a table built on the T_bb values it is given** (`T = T_bb`, `interp1d` in log, extrapolating beyond the ends). So what `grainSizeDF` keeps at one T_bb depends on the other T_bb values in the same call. Example (AGN, carbon cut at 1400 K): 0.317 of the carbon mass at 1148.3 K on the fit's 30-point grid, 0.359 with T_bb = [996.9, 1027.2, 1148.3].
   - The fit always passes its fixed grid. Adding points to it leaves the values at its points unchanged (996.9–1521.3 K, both cuts), so the fit is not affected. Only direct calls with a short T_bb list are. Not acted on.
 - 2026-11-20: **The inpars comment `_HOT_TMP = 571.6 -> <HOT_TMP> = 1250K` is not reproduced** by the grain model. At T_bb = 571.6 K the mass-weighted mean T_eq of the surviving grains is 1196 K (silicates) and 926 K (carbon) for the AGN SED, and 1015 K and 988 K for the ISRF. For the clean-up list.
