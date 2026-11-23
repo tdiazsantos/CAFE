@@ -638,6 +638,44 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
       - The cone is 1.50 FWHM in every band.
       - Where the ring is pulled in, its inner edge stays at least 2.47 FWHM out (ch3-long and ch4-long at their red ends).
       - No plane lacks room. The only NaN planes are ch4-long's 12 empty ones (28.633–28.699 µm).
+    - *(Approved 2026-11-23; see "Decisions".)*
+  - **W2246 re-extracted with the 1.5-FWHM cone and the 1″ ring** (2026-11-23, my request, step 1; see "Decisions"). *(Stopped before using the stitched spectrum: the ch1-short → ch1-medium ratio has S/N 1.8. Step 2, the fit setup, not done.)* Extraction in `extractions/W2246_MIRI_c1003_ring/`; parameters `tests/M5/params/W2246_MIRI_r0.4263as_ring_params.txt`.
+    - **Setup:**
+      - the 12 `c1003` cubes, `dev` @ `3b64c30`; CRETA's centring at 8.0 µm (341.53148°, −5.44300°, as before);
+      - r_ap = 0.4263″ and r_ann_in = 0.8526″ at 5.4 µm, `ann_width` = 1.0″, background on;
+      - no aperture correction; `stitch_band = ch2-short`.
+      - The ring is pulled in where `W2246/ring_fit.py` said: 197 planes of ch1-medium, 1,285 of ch1-long, 490 of ch2-long, 162 of ch4-medium, and all of ch3-medium, ch3-long and ch4-long. No plane lacks room.
+    - **Background removed** (median per band, MJy/sr):
+
+      | ch1-short | ch1-medium | ch1-long | ch2-short | ch2-medium | ch2-long |
+      |---|---|---|---|---|---|
+      | −2.74 | −0.76 | −6.40 | +2.00 | +1.98 | +1.86 |
+
+      | ch3-short | ch3-medium | ch3-long | ch4-short | ch4-medium | ch4-long |
+      |---|---|---|---|---|---|
+      | +1.16 | +2.37 | +2.32 | +0.08 | +3.30 | −52.7 |
+
+    - **NaN planes:** only ch4-long's 12 empty planes.
+    - **Overlap ratios** (next / this; S/N from the overlap's channel scatter, with CRETA's `Err` in brackets):
+
+      | Overlap | Ratio | S/N |
+      |---|---|---|
+      | **ch1-short → ch1-medium** | **6.31** | **1.8 (4.6)** |
+      | ch1-medium → ch1-long | 1.054 | 16 |
+      | ch1-long → ch2-short | 0.924 | 46 |
+      | ch2-short → ch2-medium | 0.948 | 94 |
+      | ch2-medium → ch2-long | 0.949 | 107 |
+      | ch2-long → ch3-short | 0.997 | 185 |
+      | ch3-short → ch3-medium | 0.967 | 204 |
+      | ch3-medium → ch3-long | 0.999 | 236 |
+      | ch3-long → ch4-short | 1.043 | 242 |
+      | ch4-short → ch4-medium | 1.018 | 146 |
+      | ch4-medium → ch4-long | 1.026 | 36 |
+
+      - ch1-short's overlap median is 0.0062 mJy (0.0157 with the one-FWHM cone).
+      - That ratio enters only ch1-short's own stitching factor (6.15). Every other band's factor (0.92–1.15) matches the product of the other ratios and does not use it (`stitch_factors_W2246_c1003_ring.txt`). ch1-short is already left out of W2246's fits.
+    - **Stitched bands:** no band's median is negative. Negative channels: 35% in ch1-short, 5% in ch1-medium, 4% in ch4-long, 0 elsewhere.
+    - ch4-long beyond 27 µm is positive (21–50 mJy unstitched per 0.5 µm).
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
@@ -1024,6 +1062,8 @@ cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bi
 cd /Users/tanio/pywork/cafe_work/tests/M5/annulus && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore test_point_source_annulus.py /Users/tanio/Sync/pywork/CAFE > ../logs/test_point_source_annulus.txt 2>&1   # M5: the fixed-width ring (2383c67) on synthetic cubes; before: the same from annulus/before_ring/ with the checkout /Users/tanio/pywork/cafe_work/cmp/ring_before (git archive of 1c93f9a's CRETA), log ../logs/test_point_source_annulus_before_ring.txt. Replaces the 9017022 version of this test (logs of that version overwritten)
 cd /Users/tanio/pywork/cafe_work && tests/M5/fwhm/run_regressions.sh /Users/tanio/pywork/cafe_work/cmp/ring_before ring   # M5: NGC7469 extractions before/after the ring change (outputs ring_{before,after}_*; logs tests/M5/logs/ring_regression_*); compare with compare_extractions.py and cmp as for fwhm (log tests/M5/logs/ring_regression_compare.txt)
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore ring_fit.py > ../logs/ring_fit_W2246_c1003.txt   # M5: W2246's ring per band as CRETA sets it (cone 0.4263", r_ann_in 0.8526", ann_width 1.0" by default)
+cd /Users/tanio/pywork/cafe_work && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python tests/M5/extract_W2246.py cubes_miri_mast_c1003 W2246_MIRI_c1003_ring W2246_MIRI_r0.4263as_ring_params.txt > tests/M5/logs/extract_W2246_c1003_ring.txt 2>&1   # M5: W2246 with the 1.5-FWHM cone and the 1" ring from 3 FWHM
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore bkg_extraction_check.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003_ring/W2246_MIRI_SingleExt_r0.4263as.csv > ../logs/bkg_extraction_check_W2246_c1003_ring.txt   # M5: its backgrounds, overlap ratios with S/N, NaN planes, stitched signs (the stitching-factor check per band: inline, log ../logs/stitch_factors_W2246_c1003_ring.txt)
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
