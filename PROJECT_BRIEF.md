@@ -600,6 +600,44 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
     - **ch1-short is unreliable for W2246 and is left out of its fits** (my decision, 2026-11-23). It is barely detected (median 0.011 mJy unstitched, 0.018 mJy stitched), 24% of its channels are negative, and its overlap ratio of 1.65 (the lowest S/N, 7.3) sets its stitching.
     - No fit of W2246 until its PSF arrives (my decision, 2026-11-23).
     - Cost (information only): the extraction took 26 s.
+  - **CRETA's fixed-width background ring for point sources, commit `2383c67`** (2026-11-23, my request; waiting for my review; see "Awaiting my OK").
+    - **The change:** for a point source, the ring is `ann_width` wide at every wavelength.
+      - Its inner edge is `r_ann_in` at `lambda_ap`, scaled like the cone.
+      - Where the ring would leave the largest circle around the source inside the field, it moves inward just enough to fit, but never inside the cone. A plane with no room outside the cone gets a NaN background and flux.
+      - CRETA prints, per band, how many planes are pulled in and how many have no room.
+      - `ann_width` must be > 0 (a `ValueError` otherwise), and `MIN_ANNULUS_PIXELS` is 20. Extended sources are unchanged.
+    - **Synthetic test** (`tests/M5/annulus/test_point_source_annulus.py`, rewritten):
+      - Setup: four MIRI-like bands of 41×41 pixels with rectangular fields (ch1 at 0.13″ per pixel, a ch4-short-like band at 0.5″); a 1 mJy Gaussian with Law et al.'s FWHM; a flat background of +3, −3 or 0 MJy/sr × λ/5.4 µm, with and without noise of 1 MJy/sr per pixel; a cone of 0.3″, `r_ann_in` 0.6″ and `ann_width` 0.2″ at 5.4 µm.
+      - The four bands cover the four cases: the ring nominal (ch1-short), pulled in (96 planes of ch1-medium), pulled in or without room (159 and 122 planes of ch1-long), and under 20 pixels (all of ch4-short).
+      - **Result: all checks pass.**
+        - The ring's edges in every plane match the rule computed from the rectangles to 10⁻¹⁰ px.
+        - `ann_width = 0` stops with the `ValueError`.
+        - The NaN planes are exactly the no-room and under-20 ones, and CRETA's counts per band are as expected.
+        - The background is recovered to 10⁻¹⁵ MJy/sr, and flux(B0) = flux(0) to 10⁻¹⁵. Where the ring is nominal, the flux with background on equals that with it off to 1.3×10⁻⁷.
+        - With noise, where the ring is nominal: the background error has mean +0.06 ± 0.05 and rms 0.92 × 1.25σ/√N; the flux error has mean +0.09 ± 0.10 µJy.
+      - **Information:** where the ring is pulled in to just outside the cone (ch1-long), the Gaussian's wings in it lower the flux by 0.7–1.5%, and with noise the background comes out 1.5σ high, because the median of steep wings plus noise is not the median of the wings plus that of the noise. A ring pulled in near the cone costs accuracy.
+      - **Before** (`1c93f9a`'s CRETA): 17 checks fail. The ring ignores `ann_width` and reaches the field's edge, the minimum is 50, and `ann_width = 0` raises no error.
+    - **Regression:** NGC7469's M3 single extraction (no background; extended-source background), 3×3 grid and M5 NIRSpec + MIRI extraction are byte-identical before (`1c93f9a`) and after.
+    - **W2246, read only** (`W2246/ring_fit.py`; cone 0.4263″ = 1.5 FWHM, `r_ann_in` 0.8526″ = 3 FWHM, `ann_width` 1.0″, centred at 8.0 µm):
+
+      | Band | Cone | Ring inner → outer | Pulled in | Fewest pixels |
+      |---|---|---|---|---|
+      | ch1-short | 0.402–0.443″ | 0.803–0.886 → 1.803–1.886″ | no | 490 |
+      | ch1-medium | 0.439–0.487″ | 0.878–0.959 → 1.878–1.959″ | 197 planes (6.47–6.63 µm) | 513 |
+      | ch1-long | 0.482–0.538″ | 0.965–0.974 → 1.965–1.974″ | 1,285 planes (6.62–7.65 µm) | 537 |
+      | ch2-short | 0.531–0.593″ | 1.062–1.186 → 2.062–2.186″ | no | 339 |
+      | ch2-medium | 0.588–0.660″ | 1.176–1.321 → 2.176–2.321″ | no | 363 |
+      | ch2-long | 0.655–0.738″ | 1.309–1.413 → 2.309–2.413″ | 490 planes (11.06–11.70 µm) | 388 |
+      | ch3-short | 0.731–0.826″ | 1.462–1.652 → 2.462–2.652″ | no | 306 |
+      | ch3-medium | 0.819–0.930″ | 1.598 → 2.598″ | all 892 planes | 320 |
+      | ch3-long | 0.922–1.049″ | 1.724 → 2.724″ | all 1,028 planes | 337 |
+      | ch4-short | 1.035–1.196″ | 2.071–2.392 → 3.071–3.392″ | no | 130 |
+      | ch4-medium | 1.183–1.371″ | 2.367–2.646 → 3.367–3.646″ | 162 planes (23.51–24.48 µm) | 144 |
+      | ch4-long | 1.367–1.580″ | 2.596 → 3.596″ | all 717 planes | 151 |
+
+      - The cone is 1.50 FWHM in every band.
+      - Where the ring is pulled in, its inner edge stays at least 2.47 FWHM out (ch3-long and ch4-long at their red ends).
+      - No plane lacks room. The only NaN planes are ch4-long's 12 empty ones (28.633–28.699 µm).
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
@@ -983,6 +1021,9 @@ cd /Users/tanio/pywork/cafe_work && ~/miniforge3/envs/cafe-dev/bin/python -W ign
 cd /Users/tanio/pywork/cafe_work && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python tests/M5/extract_W2246.py cubes_miri_mast_c1003 W2246_MIRI_c1003_bkg W2246_MIRI_r0.2842as_bkg_params.txt > tests/M5/logs/extract_W2246_c1003_bkg.txt 2>&1   # M5: W2246, c1003 cubes, one-FWHM cone, two-FWHM annulus, centring at 8.0 um, stitching to ch2-short
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore bkg_extraction_check.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003_bkg/W2246_MIRI_SingleExt_r0.2842as.csv > ../logs/bkg_extraction_check_W2246_c1003.txt   # M5: background per band, NaN planes, overlap ratios with S/N, stitched signs, ch4-long beyond 27 um
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore step3_compare.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003_bkg/W2246_MIRI_SingleExt_r0.2842as.csv > ../logs/step3_compare_W2246_c1003.txt   # M5: step 3, shape against M3's spectrum (normalised in ch2-short), the 12.0 and 22.0 um points, and W4's red-source correction both ways
+cd /Users/tanio/pywork/cafe_work/tests/M5/annulus && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore test_point_source_annulus.py /Users/tanio/Sync/pywork/CAFE > ../logs/test_point_source_annulus.txt 2>&1   # M5: the fixed-width ring (2383c67) on synthetic cubes; before: the same from annulus/before_ring/ with the checkout /Users/tanio/pywork/cafe_work/cmp/ring_before (git archive of 1c93f9a's CRETA), log ../logs/test_point_source_annulus_before_ring.txt. Replaces the 9017022 version of this test (logs of that version overwritten)
+cd /Users/tanio/pywork/cafe_work && tests/M5/fwhm/run_regressions.sh /Users/tanio/pywork/cafe_work/cmp/ring_before ring   # M5: NGC7469 extractions before/after the ring change (outputs ring_{before,after}_*; logs tests/M5/logs/ring_regression_*); compare with compare_extractions.py and cmp as for fwhm (log tests/M5/logs/ring_regression_compare.txt)
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore ring_fit.py > ../logs/ring_fit_W2246_c1003.txt   # M5: W2246's ring per band as CRETA sets it (cone 0.4263", r_ann_in 0.8526", ann_width 1.0" by default)
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
@@ -1403,6 +1444,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - `MIN_ANNULUS_PIXELS` becomes 20.
   - Update the parameter-file comments, README and DESIGN.md; adapt the synthetic annulus test (fixed width, pull-in, 20-pixel minimum); NGC7469's extractions must stay byte-identical.
   - For W2246, with r_ap = 0.4263″ and r_ann_in = 0.8526″ (3 FWHM) at 5.4 µm: per band, the cone, the ring's inner and outer edges (and where it was pulled in), the fewest pixels and any NaN planes.
+  - *(Done 2026-11-23: commit `2383c67`, waiting for my review; my choices in it are under "Awaiting my OK".)*
   - **No fit until the PSF arrives.**
   - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
@@ -1553,6 +1595,11 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - It also stops a MIRI-only run with such a `lambda_ap`, which used to work with λ scaling. None of the shipped or work-folder parameter files has one.
   - **The boundary is MIRI MRS's shortest wavelength, 4.9 µm** (`MIRI_MRS_SHORTEST_UM`). Above MIRI's longest wavelength, Law et al. is extrapolated; no instrument covers that range.
   - *(Decided 2026-11-23: `2818075` approved with the three choices; see "Decisions". A NIRSpec FWHM law is still to be chosen; see "Later".)*
+- 2026-11-23: **CRETA's fixed-width ring, commit `2383c67`: the change and three choices I made in it** (see M5, W2246).
+  - **`ann_width` ≤ 0 with a point source stops with a `ValueError`.** The shipped parameter files have `ann_width = 0.0`, which point sources used to ignore. With a fixed-width ring, 0 would silently make every plane NaN.
+  - **"No room" means the fitted inner edge lies inside the largest cone radius in that plane.** An edge exactly on the cone is allowed. With several aperture radii, the largest one counts.
+  - **Messages:** CRETA prints the planes pulled in and those without room, per band. The under-20-pixels message no longer counts the no-room planes, which have their own.
+  - Seen in the synthetic test: a ring pulled in to just outside the cone holds the PSF's wings, which lower the flux (a Gaussian: 0.7–1.5%). For W2246 the pulled-in rings stay at least 2.47 FWHM out.
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
