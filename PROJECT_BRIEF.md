@@ -745,6 +745,90 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 
       - So the quoted errors are 2–6× too small. With the 1% floor (σ_fit = √(σ² + (0.01 F)²)), ch3 matches the scatter, but ch1–ch2 stay 1.5–2× low and ch4-medium and ch4-long 3.4–3.8× low.
       - If adjacent channels are correlated, the successive-difference scatter underestimates the noise, so these ratios are lower limits.
+  - **W2246's first spectrum-only fits** (2026-11-23, run set `w2246`, j = 0, 1, 2; W2246's own setup, see "Decisions"; `m5_fit.py`, `w2246_summary.py`, log `logs/w2246_summary.txt`).
+    - **Setup:**
+      - the ring extraction without ch1-short (`data/W2246/spectra/W2246_MIRI_r0.4263as_ring_noch1s_cube.fits`), z = 4.601, DQ used, flux_scale = 1 + j × 1e-7; 9,895 channels;
+      - inpars `params/inpars_jwst_miri_W2246_M5_spec.ini`, the copy of my file with 10 changes (diff in `logs/inpars_W2246_M5_spec_diff.txt`), through `W2246/cafe_dir_W2246/`;
+      - the shipped `default_opt.cafe`, with CRETA's errors and its 1% floor; no photometry; `dev` @ `1bd172a`.
+      - 12 free parameters: WRM_FLX, WRM_TMP, WRM_TAU, HOT_FLX, HOT_TMP, HOT_TAU, STB_FLX, STB_TAU, STB_010, DSK_FLX and DSK_TAU, plus the 3.3 µm PAH's peak; PAH_TAU = WRM_TAU.
+    - **χ² (floored):**
+
+      | j | χ² | χ²/N | Δχ² to the best | Stop |
+      |---|---|---|---|---|
+      | 2 | 109,441.68 | 11.060 | 0 | ftol + xtol |
+      | 1 | 109,453.44 | 11.062 | 11.8 | ftol + xtol |
+      | 0 | 109,734.02 | 11.090 | 292.3 | xtol |
+
+      - Only 1 of 3 is within Δχ² < 1 of the best; the spread is 292.
+      - One minimize call each, 925–1,069 evaluations, 25 s per fit.
+    - **Continuum** (j = 2 / j = 1 / j = 0; value ± lmfit's error):
+
+      | Parameter | j = 2 | j = 1 | j = 0 |
+      |---|---|---|---|
+      | HOT_TMP | 1303 ± 185 K | 1291 ± 161 K | 1063 ± 79 K |
+      | HOT_FLX | 0.723 ± 0.035 | 0.725 ± 0.031 | 0.763 ± 0.018 |
+      | HOT_TAU | 2.82 ± 0.12 | 2.81 ± 0.10 | 2.67 ± 0.05 |
+      | WRM_TMP | 264 ± 174 K | 248 ± 169 K | 225 ± 170 K |
+      | WRM_FLX | 0.61 ± 0.55 | 0.67 ± 0.62 | 0.78 ± 0.90 |
+      | WRM_TAU (= PAH_TAU) | 7.4 ± 3.3 | 7.1 ± 3.4 | 7.1 ± 4.2 |
+      | DSK_FLX | 0.0062 ± 0.0055 | 0.0059 ± 0.0039 | 0.0023 ± 0.0007 |
+      | DSK_TAU | 0.19 ± 0.34 | 0.18 ± 0.62 (fixed after the fit) | 0.0017 (fixed after the fit) |
+
+      - **STB_FLX ends at 0** (its lower bound) in all three, and is fixed after the fit. STB_TAU and STB_010 are then undetermined (errors 10⁴–10⁵).
+    - **Share of the continuum** (best fit, j = 2; ∫F_ν dν):
+
+      | Window (µm rest) | HOT | WRM | DSK | STB |
+      |---|---|---|---|---|
+      | 1.0–1.5 | 0.56 | 0 | 0.44 | 0 |
+      | 1.5–2.0 | 0.89 | 0.001 | 0.11 | 0 |
+      | 2.0–2.5 | 0.94 | 0.011 | 0.047 | 0 |
+      | 2.5–3.0 | 0.92 | 0.054 | 0.031 | 0 |
+      | 3.0–3.5 | 0.81 | 0.16 | 0.024 | 0 |
+      | 3.5–4.0 | 0.65 | 0.34 | 0.019 | 0 |
+      | 4.0–4.5 | 0.47 | 0.52 | 0.016 | 0 |
+      | 4.5–5.12 | 0.32 | 0.67 | 0.012 | 0 |
+      | whole range | 0.66 | 0.31 | 0.035 | 0 |
+
+      - j = 0 and j = 1 give HOT 0.56–0.66 and DSK 0.34–0.44 at 1.0–1.5 µm.
+    - **3.3 µm PAH:** its peak ends at 0 in all three fits and is fixed after the fit, so the PAH table is empty.
+    - **χ²/N per band** (j = 2; j = 0 and 1 within 0.5, except ch3-short 4.31–4.84):
+
+      | Band | χ²/N |
+      |---|---|
+      | ch1-medium | 15.7 |
+      | ch1-long | 9.3 |
+      | ch2-short | 11.4 |
+      | ch2-medium | 10.6 |
+      | ch2-long | 8.2 |
+      | ch3-short | 4.8 |
+      | ch3-medium | 3.5 |
+      | ch3-long | 2.3 |
+      | ch4-short | 25.7 |
+      | ch4-medium | 16.7 |
+      | ch4-long | 24.0 |
+      | all | 11.06 |
+
+  - **The three lines unmasked, before any fit** (2026-11-23, my request; `W2246/line_width_check.py`, log `logs/line_width_check_W2246.txt`). *(Stopped before fitting: the width bounds would stop a broad line.)*
+    - **Setup:**
+      - `params/inpars_jwst_miri_W2246_M5_spec_lines.ini` = the first copy with `hrecomb_input = 'lines.H_recombination_W2246_M5_3lines.txt'` and `FitGamma_LIN_N = True` (diff in `logs/inpars_W2246_M5_spec_lines_diff.txt`).
+      - That table is a work-folder copy of my H table (`W2246/tables/`) with Paschen(5-3), Paschen(4-3) and Brackett(5-4) at MASK = 0; their DOUBLE is already 0. It is linked into `W2246/cafe_dir_W2246/` by `make_cafe_dir.py`.
+    - **Width bounds** (FWHM), as `make_feat_pars` sets them for a single (narrow) component:
+      - lower bound = the instrumental width / 1.05;
+      - upper bound = max(1.05 × the instrumental width, `EPSGamma_LIN_N`). My file has `EPSGamma_LIN_N` = 400 km/s.
+
+      | Line | Observed | Band | Width start | Bounds |
+      |---|---|---|---|---|
+      | Paβ | 7.181 µm | ch1-long | 89 km/s | 85–400 km/s |
+      | Paα | 10.505 µm | ch2-long | 100 km/s | 95–400 km/s |
+      | Brα | 22.697 µm | ch4-medium | 174 km/s | 165–400 km/s |
+
+      - The centres are fixed at z = 4.601 (`FitWave0_LIN_N` False; `EPSWave0_LIN_N` 100 km/s if freed).
+    - **Paα is dropped by `fit_spec`'s default** (`force_all_lines = False`): its starting amplitude at the instrumental width comes out ≤ 0. Only with `force_all` is it kept (16 → 18 free parameters).
+    - **How broad they are, roughly:** a Gaussian plus a straight line fitted to the first run's residual (outside CAFE).
+      - Paβ: FWHM 1,250 ± 210 km/s, centred at +13 km/s.
+      - Paα: 750 ± 170 km/s, centred at −1,190 km/s.
+      - Brα: 53 ± 3 km/s, narrower than the instrument, so that fit caught a spike, not the line.
+      - Only Paβ's estimate is usable. It is already 3× the 400 km/s cap.
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
@@ -1136,6 +1220,9 @@ cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bi
 cd /Users/tanio/pywork/cafe_work && ~/miniforge3/envs/cafe-dev/bin/python -W ignore tests/M5/W2246/drop_band.py extractions/W2246_MIRI_c1003_ring/W2246_MIRI_SingleExt_r0.4263as_cube.fits data/W2246/spectra/W2246_MIRI_r0.4263as_ring_noch1s_cube.fits ch1_SHORT   # M5: W2246's spectrum without ch1-short (fails if the output exists)
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python make_cafe_dir.py   # M5: cafe_dir for W2246 on dev: links to dev's tables plus my five W2246 tables (pre-sync)
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore fit_setup.py > ../logs/fit_setup_W2246.txt 2>&1   # M5: W2246's spectrum-only fit setup, no fit (z = 4.601 by default; logs fit_setup_W2246_z4.593.txt and _z4.6.txt with the z as argument)
+cd /Users/tanio/pywork/cafe_work/tests/M5 && (for j in 0 1 2; do echo "$j w2246"; done) | xargs -n 2 -P 3 ./run_fit.sh   # M5: W2246's first spectrum-only fits (inpars params/inpars_jwst_miri_W2246_M5_spec.ini; out/w2246_j<j>, logs/fit_w2246_j<j>.txt)
+cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore w2246_summary.py > logs/w2246_summary.txt 2>&1   # M5: their report (setup, chi^2, continuum, shares, PAH, chi^2/N per band)
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore line_width_check.py > ../logs/line_width_check_W2246.txt   # M5: the three unmasked lines' width bounds (force_all False/True) and their widths in the first run's residual
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
@@ -1581,6 +1668,13 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - **Errors:** as CRETA gives them, with the shipped `default_opt.cafe` (whose 1% floor applies).
   - **First run:** 3 plain fits with the usual rounding-level inputs (j = 0, 1, 2).
   - Report, starting with the setup header: the free parameters; the χ² of each fit and whether they agree (Δχ² < 1); the fitted continuum parameters with their errors; each component's share of the continuum across the range; the 3.3 µm PAH; and χ²/N per band. Then stop.
+  - *(Done 2026-11-23: inpars copy `tests/M5/params/inpars_jwst_miri_W2246_M5_spec.ini`, run set `w2246`; see M5.)*
+- 2026-11-23: **Change to W2246's setup: Paα 1.875, Paβ 1.282 and Brα 4.051 µm unmasked.**
+  - Each is one Gaussian with its width free, with no broad second component. Every other line and opacity feature stays masked.
+  - Show the three lines' width bounds in km/s, and stop before fitting if they would stop a broad line.
+  - Then rerun the 3 fits with the lines unmasked and report both runs side by side.
+  - *(2026-11-23: set up in `inpars_jwst_miri_W2246_M5_spec_lines.ini`, with a work-folder copy of my H table that has those three lines at MASK = 0.)*
+  - *(Stopped before fitting: `EPSGamma_LIN_N = 400` km/s caps each width at 400 km/s, which would stop a broad line. See M5.)*
   - **No fit until the PSF arrives.**
   - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
@@ -1749,6 +1843,10 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - **Errors:** the channel-to-channel scatter is 2–6× CRETA's quoted errors. With the 1% floor it matches in ch3, but is 1.5–2× in ch1–ch2 and 3.4–3.8× in ch4-medium and ch4-long. The fit weights by these errors.
   - **Opt file:** `default_opt.cafe`.
   - *(Decided 2026-11-23: W2246's own setup, recorded under "Decisions" as "W2246's spectrum-only fit setup".)*
+- 2026-11-23: **W2246's three unmasked lines: choices before the rerun** (see M5).
+  - **The width cap:** `EPSGamma_LIN_N` = 400 km/s caps a single component's FWHM at 400 km/s, below Paβ's ~1,250 km/s in the first run's residual. Raising it in the copy affects only these three lines, since every other line stays masked. The new value is my choice.
+  - **Paα:** `fit_spec`'s default drops it, because its starting amplitude at the instrumental width is ≤ 0. Keep it with `force_all_lines = True` in the run?
+  - **Centres:** fixed at z = 4.601 (`FitWave0_LIN_N` False). Free them, and with what range (`EPSWave0_LIN_N`, 100 km/s now)?
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
