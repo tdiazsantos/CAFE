@@ -829,6 +829,57 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
       - Paα: 750 ± 170 km/s, centred at −1,190 km/s.
       - Brα: 53 ± 3 km/s, narrower than the instrument, so that fit caught a spike, not the line.
       - Only Paβ's estimate is usable. It is already 3× the 400 km/s cap.
+    - *(Replaced 2026-11-23 by my final line choice; see "Decisions" and the next bullet.)*
+  - **W2246 with the final line choice: narrow and broad Paβ, Paα and Brα** (2026-11-23, run set `w2246lines`, j = 0, 1, 2; `m5_fit.py`, `w2246_summary.py`, `W2246/line_bounds.py`; logs `logs/w2246_summary.txt` (both runs side by side) and `logs/line_bounds_W2246.txt`).
+    - **Setup:** as the first run, with `params/inpars_jwst_miri_W2246_M5_spec_lines.ini` and `fit_spec(force_all_lines=True)`; `dev` @ `6b9fe9e`.
+      - The inpars copy differs from my file by the first copy's 10 changes plus: `hrecomb_input = 'lines.H_recombination_W2246_M5_3lines.txt'`, `FitWave0_LIN_B`, `FitGamma_LIN_N` and `FitGamma_LIN_B` True, `EPSWave0_LIN_B` 1500, `EPSGamma_LIN_B` 3000 (diff in `logs/inpars_W2246_M5_spec_lines_diff.txt`).
+      - That table copy differs from my H table only by MASK 0 and DOUBLE 1 for Paschen(5-3), Paschen(4-3) and Brackett(5-4) (`logs/H_table_W2246_M5_3lines_diff.txt`).
+      - 27 free parameters: the 12 before, plus each line's narrow width and peak, and broad centre, width and peak.
+    - **Bounds** (km/s; CAFE sets the narrow and broad options separately, as asked):
+      - Narrow: centre fixed at 0; FWHM from 89, 100 and 174 (Paβ, Paα, Brα: the instrumental width) within 85–400, 95–400 and 165–400.
+      - Broad: centre free from −200 within −1,493 to +1,500 (CAFE puts the blue limit at λ₀/(1 + 1500/c)); FWHM from 3× the instrumental width (266, 300, 521) within 85–3,000, 95–3,000 and 165–3,000.
+      - Peaks in [0, ∞). Paα's starting peak is the smallest positive one (`force_all`).
+    - **χ² (floored):**
+      - 108,487.41 (j = 2), 109,177.30 (j = 1), 109,266.38 (j = 0); χ²/N 10.96–11.04.
+      - Only 1 of 3 within Δχ² < 1 of the best; spread 779, against 292 with the lines masked.
+      - The best is 954 below the best with the lines masked. Each fit took 20 s.
+    - **Continuum, best fits** (lines / lines masked):
+      - HOT_TMP 793 ± 296 K / 1303 ± 185 K (704–801 / 1063–1303 over the fits); HOT_FLX 0.815 / 0.723; HOT_TAU 2.45 / 2.82.
+      - WRM_TMP 215 / 264 K; WRM_FLX 0.86 (fixed after the fit) / 0.61; WRM_TAU 7.7 / 7.4.
+      - DSK_FLX 0 (its lower bound, fixed after the fit) / 0.006; STB_FLX 0.012 / 0; STB_010 0 / 0.28.
+    - **Share of the continuum, best fits** (lines / lines masked):
+      - over 1.0–5.12 µm: HOT 0.73 / 0.66, WRM 0.26 / 0.31, DSK 0 / 0.035, STB 0.007 / 0;
+      - at 1.0–1.5 µm: HOT 0.74 / 0.56, STB 0.26 / 0, DSK 0 / 0.44;
+      - at 4.5–5.12 µm: HOT 0.39 / 0.32, WRM 0.61 / 0.67.
+    - **Lines** (best fit, j = 2; the three fits agree unless noted; "fixed" = fixed by CAFE after the fit):
+
+      | Component | Centre | FWHM | Flux (observed) | Ends at a bound |
+      |---|---|---|---|---|
+      | Paβ narrow | fixed | 90 km/s (lower bound 85) | 3×10⁻²² ± 7×10⁻²¹ W/m² | no; fixed after the fit |
+      | Paβ broad | +20 ± 92 km/s | 1,206 ± 234 km/s (1,174–1,206 over the fits) | 9.7×10⁻²⁰ ± 1.1×10⁻¹⁹ W/m² | no |
+      | Paα narrow | fixed | 400 km/s | 6×10⁻²¹ ± 2×10⁻²⁰ W/m² | width at its upper bound, all fits |
+      | Paα broad | −1,493 km/s | 3,000 km/s | 2.3×10⁻¹⁹ ± 2.5×10⁻¹⁹ W/m² | centre at its lower and width at its upper bound, all fits |
+      | Brα narrow | fixed | 400 km/s | 1×10⁻²⁰ ± 1.2×10⁻¹⁹ W/m² | width at its upper bound, all fits |
+      | Brα broad | +1,500 km/s | 3,000 km/s | 1.0×10⁻¹⁸ ± 1.0×10⁻¹⁸ W/m² | centre and width at their upper bounds in j = 2; in j = 0 and 1, −373 and −406 ± ~470 km/s, FWHM 1,171 and 1,245 ± ~590 km/s, flux 2.9×10⁻¹⁹ ± 3.4×10⁻¹⁹ W/m² |
+
+      - Every line flux has S/N ≤ 1.
+    - **3.3 µm PAH:** its peak ends at 0, at its lower bound, and is fixed after the fit, in all six fits.
+    - **χ²/N per band, best fits** (lines / lines masked):
+
+      | Band | Lines | Lines masked |
+      |---|---|---|
+      | ch1-medium | 16.28 | 15.67 |
+      | ch1-long | 8.62 | 9.30 |
+      | ch2-short | 11.40 | 11.41 |
+      | ch2-medium | 10.61 | 10.56 |
+      | ch2-long | 7.57 | 8.21 |
+      | ch3-short | 3.76 | 4.84 |
+      | ch3-medium | 3.60 | 3.50 |
+      | ch3-long | 2.26 | 2.33 |
+      | ch4-short | 26.87 | 25.69 |
+      | ch4-medium | 17.30 | 16.65 |
+      | ch4-long | 23.53 | 24.00 |
+      | all | 10.96 | 11.06 |
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
@@ -1223,6 +1274,8 @@ cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1
 cd /Users/tanio/pywork/cafe_work/tests/M5 && (for j in 0 1 2; do echo "$j w2246"; done) | xargs -n 2 -P 3 ./run_fit.sh   # M5: W2246's first spectrum-only fits (inpars params/inpars_jwst_miri_W2246_M5_spec.ini; out/w2246_j<j>, logs/fit_w2246_j<j>.txt)
 cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore w2246_summary.py > logs/w2246_summary.txt 2>&1   # M5: their report (setup, chi^2, continuum, shares, PAH, chi^2/N per band)
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore line_width_check.py > ../logs/line_width_check_W2246.txt   # M5: the three unmasked lines' width bounds (force_all False/True) and their widths in the first run's residual
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore line_bounds.py > ../logs/line_bounds_W2246.txt   # M5: the final line choice's narrow and broad bounds in km/s, as fit_spec builds them (force_all)
+cd /Users/tanio/pywork/cafe_work/tests/M5 && (for j in 0 1 2; do echo "$j w2246lines"; done) | xargs -n 2 -P 3 ./run_fit.sh   # M5: W2246 with narrow and broad Pa beta, Pa alpha and Br alpha (params/inpars_jwst_miri_W2246_M5_spec_lines.ini, force_all_lines; out/w2246lines_j<j>); then w2246_summary.py reports both run sets side by side (logs/w2246_summary.txt)
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
