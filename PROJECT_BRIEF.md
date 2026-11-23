@@ -472,6 +472,20 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
     - **`psf_sub_fix_wcs`:** in the same units as `nuclear2`, **with the same wrong BUNIT**.
       - It is smoothed spatially by a Gaussian of σ = 2 px (0.1″), minus a compact nuclear model. Within 0.15″ of the nucleus, 4–9% of the flux stays below 3.5 µm and 34–46% above 4.5 µm.
       - Nothing is subtracted at 1.660–1.775 and 5.200–5.271 µm. Its variance was not updated for the smoothing (inference).
+  - **The pipeline's `c1003` x1d spectra treat W2246 as extended** (read only, 2026-11-23; `W2246/x1d_check.py`, `W2246/x1d_background_check.py`). The x1d route is closed (my decision, 2026-11-23).
+    - **Extraction:** `SRCTYPE = EXTENDED` in all 12 bands, taken from APT (`SRCTYAPT = EXTENDED`; the dither pattern is the extended-source one).
+      - The area is the whole field, centred on the cube's middle pixel, not on W2246, and does not change with wavelength. It is about 96% of each cube's valid pixels: ~1,105 pixels of 0.13″ in ch1 (as wide as a 2.4″-radius circle), ~960 of 0.17″ in ch2 (3.0″), ~1,155 of 0.20″ in ch3 (3.8″), ~580 of 0.35″ in ch4 (4.8″).
+      - No annulus; the reference file is `jwst_miri_extract1d_0004.asdf`.
+    - **No background subtracted and no aperture correction:** `FLUX` equals the plain sum of the whole cube to 4 digits.
+      - The step loaded the aperture-correction files `jwst_miri_apcorr_0007` (ch1; not logged for ch1-short), `0005` (ch2), `0006` (ch3) and `0004` (ch4). The pipeline applies them only to point sources.
+      - The `BACKGROUND` column is not the background field: it is −2.9 MJy/sr in ch1-short, where the field is +5.9. It looks like the cube's leftover level after the master background (inference). It is recorded, not subtracted.
+    - **Flux:**
+      - ch1-short is negative in 96% of channels (−1.5 to −1.0 mJy), smooth (channel scatter 1.2 × the errors).
+      - ch1-long is negative in 95% (about −2.6 mJy to 7.5 µm, −0.2 at 7.5–7.65 µm), smooth (1.2 ×).
+      - ch4-long beyond 27 µm falls steeply: −51 mJy at 27–27.5 µm, −365 at 27.5–28, −1,484 at 28–28.5 and −410 at 28.5–28.7 µm; the scatter is 12.6 × the errors over the band.
+      - The cause is the negative leftover background summed over the whole field (about −1.3 mJy in ch1-short, −55 mJy in ch4-long).
+    - **Against CRETA's `c1003` extraction** (at M3's position, 0.138″ from the 8.0 µm one; unstitched; bands where both medians are positive): x1d/CRETA 3.97 (ch2-short), 2.07, 1.54, 1.35, 1.42, 1.33, 1.15 and 1.67 (ch4-medium).
+      - Not a calibration test: the whole field against a 0.5″ cone. In ch2-short the leftover background over the field (+1.6 mJy) is most of the x1d's 1.98 mJy, while W2246 gives 0.44 mJy in the cone.
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
@@ -839,6 +853,8 @@ cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && for run in W2246_MIRI_c1003 W2246_MIRI; do env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python -W ignore stitch_diag.py /Users/tanio/pywork/cafe_work/extractions/$run/W2246_MIRI_SingleExt_r0.5as.fits; echo; done > ../logs/stitch_diag_W2246_c1003.txt 2>&1   # M5: per-band fluxes, overlap means and ratios, the last band per 0.5 µm
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python -W ignore mast_inventory.py > ../logs/mast_inventory_W2246.txt   # M5: W2246's MAST MIRI cubes: observation, target, band, pipeline, coordinates, background keywords, input exposures
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore annulus_check.py > ../logs/annulus_check_W2246_c1003.txt   # M5: CRETA's centring at 8.0 µm in c1003; whether one fixed annulus fits outside the 0.5″ cone and inside every cube's field
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python -W ignore x1d_check.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003/W2246_MIRI_SingleExt_r0.5as.fits > ../logs/x1d_check_W2246_c1003.txt   # M5: the pipeline's c1003 x1d per band (source type, area, background column, flux) and against CRETA's c1003 extraction
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python -W ignore x1d_background_check.py > ../logs/x1d_background_check_W2246_c1003.txt   # M5: what the x1d BACKGROUND column holds; FLUX against the whole-cube sum
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
@@ -1210,6 +1226,12 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Asked: CRETA's own annulus on the `c1003` cubes, centred at 8.0 µm (ch2-short), with stitching reference ch2-short. Stopped before extracting, because no single annulus fits (see "Biases").
   - Rejected: an annulus that scales with wavelength like the cone, which would be a thin ring (0.50–0.64″ at 5.4 µm) in W2246's PSF wings; and per-band CRETA runs, which would need stitching outside CRETA.
   - Next, read only: the pipeline's `c1003` x1d spectra (extraction settings, background, aperture correction), and their fluxes against CRETA's.
+- 2026-11-23: **W2246: the x1d route is closed**, because the pipeline treated W2246 as extended (see M5).
+  - Next: a CRETA change for faint point sources, as its own commit for my review, with no extraction yet.
+  - When `point_source = True` and background subtraction is on, each wavelength plane gets its own annulus. Its inner radius is a fixed multiple of the cone radius at that wavelength. Its outer radius is the largest circle around the source inside that cube's field.
+  - Say what happens in a plane where the annulus has too few pixels, and propose the multiple and the minimum number of pixels.
+  - Test it on synthetic data with known truth: a point source on a known, spatially flat background of either sign, in cubes with small fields. The background must be recovered and the source flux unchanged.
+  - For W2246: which cone radius at 5.4 µm is about one FWHM of MIRI's PSF there, and whether the annulus then fits in all 12 bands.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
