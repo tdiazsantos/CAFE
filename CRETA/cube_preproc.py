@@ -242,6 +242,16 @@ class cube_preproc:
     def getRpixExtendedSource(self, r_ap, ps):
         return (np.array(r_ap)/ps)  
     
+   #%% The largest circle around the source inside the cube's field, per plane [pixels]
+   # The field is the set of pixels with data (finite, non-zero) in the cube's median image. The radius is the distance
+   # from the source's centre in each plane to the nearest pixel centre outside the field, counting the pixels just
+   # beyond the cube's edges, so an annulus out to it ('center' mask) holds field pixels only.
+    def getFieldRadii(self, subcube):
+        median_image = np.nanmedian(subcube.cube_before, axis=0)
+        outside_field = np.pad(~(np.isfinite(median_image) & (median_image != 0)), 1, constant_values=True)
+        outside_y, outside_x = np.nonzero(outside_field)
+        return [np.min(np.hypot(outside_x - 1 - x_centre, outside_y - 1 - y_centre)) for x_centre, y_centre in subcube.xys]
+    
 
 #%%
     ##### Function for PSF sub-channel centering. Use a sub-image in order to avoid bad pixels#####
@@ -513,36 +523,49 @@ class cube_preproc:
         
         
 #%%
-    def subtractUserBackground(self, subcube, r_in, r_out):
+    def subtractUserBackground(self, subcube, r_in, r_out, min_annulus_pixels):
         res = []
         annulus = []
         annulus_aperture_list = []
         annulus_centroid = []
         res_rout = []
         anImg = subcube.cube_before.copy()
+        planes_without_background = 0
         
         for z in range(len(anImg)):
            
             img = anImg[z,:,:]
             j,k= subcube.xys[z]
-            annulus_aperture = CircularAnnulus([j,k], r_in=r_in[z], r_out=r_out[z])
+            # None: no room for a point source's annulus inside the field (only point sources set a minimum; an extended
+            # source's annulus is built as before)
+            annulus_aperture = None if min_annulus_pixels and r_out[z] <= r_in[z] else CircularAnnulus([j,k], r_in=r_in[z], r_out=r_out[z])
             # if r_in[z] > subcube.rs[z]:
             #     print("=== WARNING ===  "+subcube.name_band+" [ lambda"+str(subcube.ls[z])+"] Annulus inner r("+str(r_in[z])+") is greater than aperture("+str(subcube.rs[z])+")")
             annulus_aperture_list.append(annulus_aperture)
-            annulus_masks = annulus_aperture.to_mask(method='center')
-            annulus_data = annulus_masks.multiply(img)
-            
-            ww = np.where(annulus_data != 0)
-            annulus_data_1d = annulus_data[ww]
-            mask2 = np.where(~np.isnan(annulus_data_1d))
-            annulus_data_1d = annulus_data_1d[mask2] #exclude the NaN 
-            mean, median_sigclip, _ = sigma_clipped_stats(annulus_data_1d)
+            if annulus_aperture is not None:
+                annulus_masks = annulus_aperture.to_mask(method='center')
+                annulus_data = annulus_masks.multiply(img)
+                
+                ww = np.where(annulus_data != 0)
+                annulus_data_1d = annulus_data[ww]
+                mask2 = np.where(~np.isnan(annulus_data_1d))
+                annulus_data_1d = annulus_data_1d[mask2] #exclude the NaN 
+            else:
+                annulus_masks, annulus_data_1d = None, np.array([])
+            if annulus_data_1d.size >= min_annulus_pixels:
+                mean, median_sigclip, _ = sigma_clipped_stats(annulus_data_1d)
+            else:  # too few pixels for a background: the plane's background, and so its flux, become NaN
+                median_sigclip = np.nan
+                planes_without_background += 1
             anImg[z,:,:] = anImg[z,:,:]  -  median_sigclip
             annulus.append(annulus_masks)
             annulus_centroid.append([j,k])
             res.append(median_sigclip)
             res_rout.append(r_out)
 
+        if planes_without_background:
+            print(f'{subcube.name_band}: {planes_without_background} of {len(anImg)} planes have fewer than '
+                  f'{min_annulus_pixels} annulus pixels: their background and flux are NaN')
         return  [anImg,res,annulus,annulus_centroid,annulus_aperture_list,res_rout]             
         
     

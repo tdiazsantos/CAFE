@@ -8,5 +8,5 @@ aperture_correction = False     # [True/False]
 centering = True                # [True/False] At lambda_cent, this will update user_ra,user_dec to recenter the extraction location  
 lambda_cent = 5.4               # [microns] The wavelength at which to perform the centering (ignored if centering=False)
 background_sub = False          # [True/False]
-r_ann_in = 0.0                  # [arcsec] When background_sub=True, this defines the inner annulus size. This size will NOT scale with aperture size even when point_source=True
-ann_width = 0.0                 # [arcsec] When background_sub=True, this defines the annulus width. This size will NOT scale with aperture size even when point_source=True
+r_ann_in = 0.0                  # [arcsec] When background_sub=True, the annulus inner radius. With point_source=True it is set at lambda_ap and scales with wavelength like the aperture; otherwise it is the same at every wavelength
+ann_width = 0.0                 # [arcsec] When background_sub=True and point_source=False, the annulus width. With point_source=True it is not used: the annulus reaches out to the largest circle around the source inside each cube's field

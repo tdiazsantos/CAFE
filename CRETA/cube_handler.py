@@ -32,6 +32,9 @@ from CRETA.mylmfit2dfun import mylmfit2dfun
 
 # import ipdb
 
+# Fewest valid pixels in a point source's background annulus: a plane with fewer gets a NaN background, and so a NaN flux
+MIN_ANNULUS_PIXELS = 50
+
 # Ingests and operates on a sub-cube
 class cube_handler:
     #%%
@@ -151,16 +154,18 @@ class cube_handler:
         print('>> '+self.name_band+': Background subtraction')
         
         if point_source:
-            # self.bckg_rs = self.preprocess.getPointSourceRs(self,r_in)
-            # self.width_list = self.preprocess.getPointSourceRs(self,width)
-            self.bckg_rs =  self.preprocess.getExtendedSourceRs(self,r_in)
-            self.width_list =  self.preprocess.getExtendedSourceRs(self,width)                
+            # The annulus scales with wavelength like the cone (r_in is set at lambda_ap) and reaches out to the largest
+            # circle around the source inside the cube's field (width is not used)
+            self.bckg_rs = self.preprocess.getPointSourceRs(self,r_in)
+            self.width_list = list(np.array(self.preprocess.getFieldRadii(self)) - np.array(self.bckg_rs))
+            min_annulus_pixels = MIN_ANNULUS_PIXELS
             
         else:
             self.bckg_rs = self.preprocess.getExtendedSourceRs(self,r_in)
             self.width_list = self.preprocess.getExtendedSourceRs(self,width)
+            min_annulus_pixels = 0
 
-        self.subtractBackground(self.bckg_rs, width)
+        self.subtractBackground(self.bckg_rs, width, min_annulus_pixels)
             
 #%% 
     def doSinglePhotometry(self, isPSF, backg):
@@ -226,7 +231,7 @@ class cube_handler:
         return photometries
        
 
-    def subtractBackground(self, r_in, width):   
+    def subtractBackground(self, r_in, width, min_annulus_pixels):   
         time_background= time.time()
         r_out = []
 
@@ -234,7 +239,7 @@ class cube_handler:
                width_pix = self.width_list[i]
              # width_pix = width / self.pixel_scale
                r_out.append(r_in[i]+width_pix)
-        self.cube_after, self.med_sigma, self.annulus, self.annulus_centroid, self.annulus_aperture, self.routs = self.preprocess.subtractUserBackground(self, r_in, r_out)
+        self.cube_after, self.med_sigma, self.annulus, self.annulus_centroid, self.annulus_aperture, self.routs = self.preprocess.subtractUserBackground(self, r_in, r_out, min_annulus_pixels)
         self.cube_after[self.zero_mask] = np.nan
         
         # create the background flux spectrum
@@ -444,7 +449,7 @@ class cube_handler:
             patches.append(ap_patches[0])
             
            
-        if background:    
+        if background and self.annulus_aperture[0] is not None:
             ann_patches = self.annulus_aperture[0].plot(color='red', lw=2,label='Background annulus')
             patches.append(ann_patches[0])
         handles = ap_patches

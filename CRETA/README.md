@@ -52,8 +52,8 @@ Single Extraction parameters:
 ```centering```: Whether to perform a centroid around the user given coordinates using a 11x11 pixel box.<br/>
 ```lambda_cent```: When centering is requested, the reference wavelength at which it will be performed [um]. Ignored otherwise.<br/>
 ```background```: Whether to perform a background annulus subtraction prior to aperture photometry.<br/>
-```r_ann_in```: When background subtraction is requested, the inner radius of the annulus [arcsec]. Ignored otherwise.<br/>
-```width```: When background subtraction is requested, the width of the annulus [arcsec]. Ignored otherwise.<br/>
+```r_ann_in```: When background subtraction is requested, the inner radius of the annulus [arcsec]. For a point source it is set at ```lambda_ap``` and scales with wavelength like the aperture. Ignored otherwise.<br/>
+```width```: When background subtraction is requested for an extended source, the width of the annulus [arcsec]. For a point source it is not used: the annulus reaches out to the largest circle around the source inside each cube's field. Ignored otherwise.<br/>
 ```aperture_type```:  Aperture type: 0 for Circular, 1 for Rectangular.<br/>
 ```convolve:```:  Not currently supported. Whether to onvolve the cubes to a given resolution (PSF size at a given wavelength).<br/>
 
