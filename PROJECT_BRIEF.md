@@ -557,6 +557,9 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 
 ### Later (do not start)
 - Tests and CI.
+- **A NIRSpec FWHM law for CRETA's point-source cones** (logged 2026-11-23; my choice to make).
+  - Until then, NIRSpec cones scale with λ (FWHM ∝ λ), and a MIRI cube needs `lambda_ap` ≥ 4.9 µm (`2818075`).
+  - With a NIRSpec law, any `lambda_ap` works, and the cone is continuous at the NIRSpec–MIRI join. Today, with λ_ap = 5.4 µm, it steps by 3% at 5.0 µm.
 - R1's two end states (M4 stage 3, logged 2026-11-18): A (HOT 665 K, STB ≈ 0) and B, 773 lower (HOT at its 200 K lower bound, STB_FLX 0.58, COO 16 K), whose net gain comes from MIRI channel 4C (24.4–28.8 µm observed; 39% of R1's χ²). Look at channel 4C's data and what drives B. R1 fitted without channel 4C stays here too (decided 2026-11-19).
 - S1c with several noise seeds (M4 stage 3, logged 2026-11-18), to tell a bias in COO_TMP, COO_TAU and WRM from the noise of one realisation.
 - A NIRSpec + MIRI spectrum (from M4, logged 2026-11-18), for NGC7469 also for the HOT–STB degeneracy (decided 2026-11-19). What the pre-sync folder holds (checked 2026-11-19, read-only):
@@ -1286,6 +1289,21 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Test it on synthetic data with known truth: Gaussian point sources whose FWHM follows Law et al. The fraction of flux in the cone must be the same at every wavelength, and is shown varying before the change. NGC7469's extractions must stay bit-identical.
   - For W2246, r_ap = 0.2842″ at 5.4 µm (one FWHM) and r_ann_in = 0.5684″ (two FWHM): say how they fit in all 12 bands.
   - *(Done 2026-11-23: commit `2818075`, waiting for my review; my choices in it are under "Awaiting my OK".)*
+- 2026-11-23: **Commit `2818075` approved**, with its three choices:
+  - NIRSpec cones keep r_ap × λ/λ_ap, even when λ_ap lies in MIRI;
+  - a MIRI cube with `lambda_ap` below 4.9 µm stops with a `ValueError`;
+  - the boundary is MIRI MRS's shortest wavelength, 4.9 µm.
+  - A NIRSpec FWHM law is still to be chosen (see "Later"). With it, any `lambda_ap` works and the cone is continuous at the NIRSpec–MIRI join.
+  - Next: the synthetic cubes under `tests/M5/fwhm/` deleted. Then W2246 from the `c1003` cubes:
+    - centring at 8.0 µm with CRETA's centring; `point_source = True`, r_ap = 0.2842″ at 5.4 µm (one FWHM);
+    - background on with r_ann_in = 0.5684″ (two FWHM); no aperture correction; `stitch_band = ch2-short`.
+  - Report:
+    - the background removed per band (median), and the NaN planes per band;
+    - the raw overlap ratios with their S/N;
+    - whether any stitched band is negative, and ch4-long beyond 27 µm.
+  - Stop before using the stitched spectrum if any overlap ratio is ≤ 0 or has S/N < 3. Otherwise do step 3:
+    - the shape against M3's spectrum, normalised, since the apertures and reductions differ;
+    - the 12.0 and 22.0 µm points, approximately. Without aperture correction, the spectrum should come out low by the fraction of the PSF outside a one-FWHM cone.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1433,6 +1451,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - **A MIRI cube with `lambda_ap` below 4.9 µm stops with a `ValueError`**, rather than extrapolating Law et al. below MIRI. There, FWHM(λ_ap) would have to come from NIRSpec, which has no law.
     - It also stops a MIRI-only run with such a `lambda_ap`, which used to work with λ scaling. None of the shipped or work-folder parameter files has one.
   - **The boundary is MIRI MRS's shortest wavelength, 4.9 µm** (`MIRI_MRS_SHORTEST_UM`). Above MIRI's longest wavelength, Law et al. is extrapolated; no instrument covers that range.
+  - *(Decided 2026-11-23: `2818075` approved with the three choices; see "Decisions". A NIRSpec FWHM law is still to be chosen; see "Later".)*
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
