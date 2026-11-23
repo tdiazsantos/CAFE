@@ -1570,6 +1570,17 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - the opt file, and the number of free parameters.
   - Then stop for my choices.
 - 2026-11-23: **W2246 step 2 goes on with the stitched spectrum without ch1-short.** The failed ch1-short → ch1-medium ratio sets only ch1-short's own factor, and ch1-short is excluded. In the setup, give per band the ratio of the channel-to-channel scatter to CRETA's quoted errors, since the fit weights by those errors. *(Done 2026-11-23; see M5.)*
+- 2026-11-23: **W2246's spectrum-only fit setup.** This is W2246's own setup, not a general rule.
+  - It lives in a copy of my `inpars_jwst_miri+phot_W2246.ini` in the work folder. My pre-sync file and the shipped inpars stay untouched.
+  - **Spectrum:** the ring extraction without ch1-short (`data/W2246/spectra/W2246_MIRI_r0.4263as_ring_noch1s_cube.fits`); z = 4.601 ([CII], Díaz-Santos et al. 2016); no photometry.
+  - **Lines and opacity features:** masked, as in my tables, so only the continuum and the 3.3 µm PAH are fitted.
+  - **CIR, CLD and COO:** off. Their FLX is fixed at 0, so their other parameters are fixed too.
+  - **WRM:** as in my file, heated by the AGN, 100–300 K; its TAU starts at 0.1.
+  - **HOT:** 300–1750 K, so it doesn't overlap WRM. HOT_TAU and STB_TAU start at 0.1, and DSK_TAU = 0.1, True, 0., 0.5.
+  - **FLX starts:** as in my file.
+  - **Errors:** as CRETA gives them, with the shipped `default_opt.cafe` (whose 1% floor applies).
+  - **First run:** 3 plain fits with the usual rounding-level inputs (j = 0, 1, 2).
+  - Report, starting with the setup header: the free parameters; the χ² of each fit and whether they agree (Δχ² < 1); the fitted continuum parameters with their errors; each component's share of the continuum across the range; the 3.3 µm PAH; and χ²/N per band. Then stop.
   - **No fit until the PSF arrives.**
   - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
@@ -1737,6 +1748,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - DSK_TAU's upper bound (2, against 0.5).
   - **Errors:** the channel-to-channel scatter is 2–6× CRETA's quoted errors. With the 1% floor it matches in ch3, but is 1.5–2× in ch1–ch2 and 3.4–3.8× in ch4-medium and ch4-long. The fit weights by these errors.
   - **Opt file:** `default_opt.cafe`.
+  - *(Decided 2026-11-23: W2246's own setup, recorded under "Decisions" as "W2246's spectrum-only fit setup".)*
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
