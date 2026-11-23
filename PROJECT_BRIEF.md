@@ -522,6 +522,70 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
       - The cone is 1.00 FWHM and the annulus starts at 2 FWHM in every band: 0.27–0.30″ and 0.54–0.59″ in ch1-short, up to 0.91–1.05″ and 1.82–2.11″ in ch4-long.
       - The annulus fits all 12 bands in every plane with data, with at least 213 valid pixels (ch4-long; 252–687 in the others).
       - Every band would also allow a multiple of 3 (the largest tested).
+    - *(Approved 2026-11-23 with its three choices; the synthetic cubes under `tests/M5/fwhm/` deleted, my request.)*
+  - **W2246 extracted with the one-FWHM cone and a local background** (2026-11-23, my request; see "Decisions"). Work folder: `tests/M5/` (`extract_W2246.py`, `params/W2246_MIRI_r0.2842as_bkg_params.txt`, `W2246/bkg_extraction_check.py`, `W2246/step3_compare.py`); extraction in `extractions/W2246_MIRI_c1003_bkg/`.
+    - **Setup:**
+      - the 12 MAST `c1003` cubes (pipeline 3.0.0, master background subtracted), `dev` @ `a9cef3e`;
+      - CRETA's centring at 8.0 µm (ch2-short) from M3's position. It worked: 341.53148°, −5.44300°, 0.138″ W of M3's position;
+      - `point_source = True`, r_ap = 0.2842″ at 5.4 µm (one FWHM at every wavelength);
+      - background on, r_ann_in = 0.5684″ (two FWHM), out to the field's edge;
+      - no aperture correction; `stitch_band = ch2-short`.
+    - **Background removed** (median per band, MJy/sr):
+
+      | ch1-short | ch1-medium | ch1-long | ch2-short | ch2-medium | ch2-long |
+      |---|---|---|---|---|---|
+      | −2.77 | −0.77 | −6.35 | +2.12 | +2.06 | +1.94 |
+
+      | ch3-short | ch3-medium | ch3-long | ch4-short | ch4-medium | ch4-long |
+      |---|---|---|---|---|---|
+      | +1.32 | +2.46 | +2.30 | +0.39 | +6.17 | −48.4 |
+
+    - **NaN planes:** only ch4-long's 12 empty planes (28.633–28.699 µm). Every other plane has at least 50 annulus pixels.
+    - **CRETA's overlap ratios** (next / this, over the overlap), with their S/N from the scatter of the overlap's channels (the S/N from CRETA's `Err` is 2–6× higher):
+
+      | Overlap | Ratio | S/N |
+      |---|---|---|
+      | ch1-short → ch1-medium | 1.654 | 7.3 |
+      | ch1-medium → ch1-long | 1.050 | 23 |
+      | ch1-long → ch2-short | 0.918 | 58 |
+      | ch2-short → ch2-medium | 0.991 | 116 |
+      | ch2-medium → ch2-long | 0.973 | 131 |
+      | ch2-long → ch3-short | 0.959 | 209 |
+      | ch3-short → ch3-medium | 0.969 | 214 |
+      | ch3-medium → ch3-long | 1.001 | 263 |
+      | ch3-long → ch4-short | 0.961 | 298 |
+      | ch4-short → ch4-medium | 1.019 | 191 |
+      | ch4-medium → ch4-long | 0.990 | 53 |
+
+      - All positive, all with S/N ≥ 3, so the stitched spectrum is used.
+    - **Stitched bands:** no band's median is negative. The share of negative channels is 24% in ch1-short (median +0.018 mJy), 4% in ch1-medium and 3% in ch4-long; 0 elsewhere.
+    - **ch4-long beyond 27 µm is now positive:** median 16.3, 22.4, 14.7 and 23.8 mJy (unstitched) at 27–27.5, 27.5–28, 28–28.5 and 28.5–28.7 µm. The annulus removes −67, −277, −825 and −316 MJy/sr of leftover background there.
+    - **Step 3, shape against M3's `W2246_SingleExt_r0.5as.fits`:** both stitched spectra are divided by their median in ch2-short; per band, the median of new / M3:
+
+      | Band | New / M3 |
+      |---|---|
+      | ch1-short | 0.53 (too noisy) |
+      | ch1-medium | 0.79 |
+      | ch1-long | 0.81 |
+      | ch2-short | 0.97 |
+      | ch2-medium | 1.03 |
+      | ch2-long | 1.00 |
+      | ch3-short | 1.06 |
+      | ch3-medium | 1.10 |
+      | ch3-long | 1.12 |
+      | ch4-short | 1.17 |
+      | ch4-medium | 1.23 |
+      | ch4-long | 1.16 |
+
+      - So the new spectrum rises by up to 23% relative to M3's from ch3 on, and falls by about 20% in ch1.
+      - M3's spectrum differs in its cone (0.5″ at 5.4 µm, growing with λ: 1.8–2.5 FWHM), the background (none subtracted), the cubes (another reduction) and its stitching. Not separated.
+    - **Step 3, photometry** (W2246.txt, width 0; the stitched spectrum interpolated in log λ, as CAFE does for width 0):
+      - 12.0 µm (ch3-short): measured 2.50 ± 0.20 mJy, spectrum 2.03 mJy, ratio 0.81 ± 0.07.
+      - 22.0 µm (ch4-medium): measured 15.9 ± 1.6 mJy, spectrum 11.05 mJy, ratio 0.70 ± 0.07.
+      - Expected without aperture correction: 0.94 for a Gaussian PSF (6.25% outside a one-FWHM cone), 0.83 for an Airy pattern (17%).
+      - The annulus at 2 FWHM also removes the wings' light there. The absolute level is set by ch2-short's cone, the stitching reference.
+      - The points are approximate: single wavelengths, without WISE's response curves.
+    - Cost (information only): the extraction took 26 s.
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
@@ -902,6 +966,9 @@ cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1
 cd /Users/tanio/pywork/cafe_work/tests/M5/fwhm && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore test_fwhm_cone.py /Users/tanio/Sync/pywork/CAFE > ../logs/test_fwhm_cone.txt 2>&1   # M5: FWHM-scaled cone on synthetic Gaussians (12 MRS bands + NIRSpec); before: the same from fwhm/before/ with the checkout /Users/tanio/pywork/cafe_work/cmp/fwhm_before (git archive of bebd239's CRETA), log ../logs/test_fwhm_cone_before.txt
 cd /Users/tanio/pywork/cafe_work && tests/M5/fwhm/run_regressions.sh   # M5: NGC7469 M3 single (no background; extended background), 3x3 grid and M5 NIRSpec+MIRI extractions with bebd239's and the current CRETA (logs tests/M5/logs/fwhm_regression_*)
 cd /Users/tanio/pywork/cafe_work && ~/miniforge3/envs/cafe-dev/bin/python -W ignore tests/M5/fwhm/compare_extractions.py extractions/NGC7469_NIRSpec+MIRI_fwhm_before extractions/NGC7469_NIRSpec+MIRI_fwhm_after   # M5: before/after identical; likewise tests/M3/out/d6/fwhm_{before,after}_{single_all,single_all_bkgsub,grid_all}; and cmp of every .fits (log tests/M5/logs/fwhm_regression_compare.txt)
+cd /Users/tanio/pywork/cafe_work && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python tests/M5/extract_W2246.py cubes_miri_mast_c1003 W2246_MIRI_c1003_bkg W2246_MIRI_r0.2842as_bkg_params.txt > tests/M5/logs/extract_W2246_c1003_bkg.txt 2>&1   # M5: W2246, c1003 cubes, one-FWHM cone, two-FWHM annulus, centring at 8.0 um, stitching to ch2-short
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore bkg_extraction_check.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003_bkg/W2246_MIRI_SingleExt_r0.2842as.csv > ../logs/bkg_extraction_check_W2246_c1003.txt   # M5: background per band, NaN planes, overlap ratios with S/N, stitched signs, ch4-long beyond 27 um
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore step3_compare.py /Users/tanio/pywork/cafe_work/extractions/W2246_MIRI_c1003_bkg/W2246_MIRI_SingleExt_r0.2842as.csv > ../logs/step3_compare_W2246_c1003.txt   # M5: step 3, shape against M3's spectrum (normalised in ch2-short) and the 12.0 and 22.0 um points
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
