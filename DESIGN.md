@@ -171,9 +171,13 @@ Both extractions read their parameters from the parameter file (`single_params.t
    - The single extraction uses one aperture.
    - The grid extraction uses a grid of square spaxels; it takes each grid point's pixel centre from the aperture's `positions` (M3, G8).
    - Aperture correction in the grid: the PSF cubes are matched to `cubes` and loaded in the same order as the data (M3, G6), and measured with the data's aperture, `r_ap` (M3, G9). This path is untested end to end: CRETA's PSF cubes are not available, and it still stops at known bugs (the brief's "CRETA aperture-correction path").
+   - **Point source** (`point_source = True`, M5): the cone's radius is `user_r_ap` at `lambda_ap`, scaled with the PSF's FWHM, r(λ) = r_ap × FWHM(λ) / FWHM(λ_ap), so it stays a fixed number of FWHM (`getRpixPointSource`).
+     - The FWHM law is chosen from each cube's `INSTRUME`. MIRI MRS: FWHM = 0.033″ (λ/µm) + 0.106″ (Law et al. 2023, Eq. 1), with FWHM(λ_ap) from MIRI. A `lambda_ap` below 4.9 µm, where only NIRSpec has data, stops the extraction with a `ValueError`.
+     - NIRSpec: FWHM ∝ λ, so its radius scales with λ as before (no NIRSpec law chosen yet).
+     - Extended sources keep the same radius at every wavelength.
    - **Background** (single extraction, `background_sub = True`): each plane loses the sigma-clipped median of an annulus around the source; zeros and NaN don't count. The median goes into the output's `Background` column [MJy/sr].
      - Extended source: the annulus runs from `r_ann_in` to `r_ann_in + ann_width` [arcsec], the same at every wavelength.
-     - Point source (M5): `r_ann_in` is set at `lambda_ap` and scales with wavelength like the cone, so the inner radius is a fixed multiple, `r_ann_in / user_r_ap`, of the cone radius. The outer radius is the largest circle around the source inside the cube's field (`getFieldRadii`: the pixels with data in the cube's median image). `ann_width` is not used.
+     - Point source (M5): `r_ann_in` is set at `lambda_ap` and scales like the cone (with the PSF's FWHM), so the inner radius is a fixed multiple, `r_ann_in / user_r_ap`, of the cone radius. The outer radius is the largest circle around the source inside the cube's field (`getFieldRadii`: the pixels with data in the cube's median image). `ann_width` is not used.
      - For a point source, a plane whose annulus has fewer than `MIN_ANNULUS_PIXELS` (50, `cube_handler.py`) valid pixels, or no room inside the field, gets a NaN background and so a NaN flux. CRETA prints how many planes per band.
 2. **Stitching** works per aperture or grid point, over the bands in the order of `cubes` in the parameter file.
    - `calculateStitchRatios` gives, for each pair of adjacent bands, r = median(next band) / median(this band) over their overlap. It is 1.0 when they do not overlap or the overlap has no valid data.

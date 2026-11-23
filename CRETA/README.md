@@ -47,7 +47,7 @@ Single Extraction parameters:
 ```user_ra```: Center RA coordinates [hh:mm:ss or degrees].<br/>
 ```user_dec```: Center Dec coordinates [dd:mm:ss or degrees].<br/>
 ```point_source```: Point source (cone) or extended source (cylinder) extraction.<br/>
-```lambda_ap```: When point source extractions, the reference wavelength for the aperture radius [um]. Ignored otherwise.<br/>
+```lambda_ap```: When point source extractions, the reference wavelength for the aperture radius [um]. The radius scales with the PSF's FWHM, so the aperture stays a fixed number of FWHM: for MIRI MRS, FWHM = 0.033" (lambda/um) + 0.106" (Law et al. 2023), which needs ```lambda_ap``` within MIRI MRS (from 4.9 um); for NIRSpec, FWHM proportional to wavelength. Ignored otherwise.<br/>
 ```apperture_correction```: Whether to perform aperture correction.<br/>
 ```centering```: Whether to perform a centroid around the user given coordinates using a 11x11 pixel box.<br/>
 ```lambda_cent```: When centering is requested, the reference wavelength at which it will be performed [um]. Ignored otherwise.<br/>

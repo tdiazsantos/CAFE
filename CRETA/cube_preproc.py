@@ -23,6 +23,11 @@ from photutils.aperture import RectangularAperture
 import os
 import glob
 
+# MIRI MRS PSF FWHM [arcsec] = slope x lambda [um] + intercept: Law et al. 2023 (AJ 166, 45), Eq. 1
+MIRI_MRS_FWHM_SLOPE = 0.033
+MIRI_MRS_FWHM_INTERCEPT = 0.106
+MIRI_MRS_SHORTEST_UM = 4.9  # where MIRI MRS starts (ch1-short)
+
 # import ipdb
 
 current_path = os.path.abspath(os.getcwd())
@@ -209,19 +214,28 @@ class cube_preproc:
         all_ri = []
         for i in range(subcube.cube_before.shape[0]):
             
-            r_i = self.getRpixPointSource(base_r, subcube.pixel_scale, subcube.ls[i], subcube.base_l)
+            r_i = self.getRpixPointSource(base_r, subcube.pixel_scale, subcube.ls[i], subcube.base_l, subcube.instrument)
             all_ri.append(r_i)
 
         return all_ri
     
-   #%% Get the radius in pixels 
+   #%% Get the radius in pixels: r_ap at l_ap, scaled with the PSF's FWHM, so the aperture stays a fixed number of FWHM
    # @r_ap: the user radius in arc sec
    # @ps: the channel's pixel scale
    # @l_i: the target lambda
+   # @instrument: the cube's instrument (INSTRUME). MIRI: the MRS FWHM law, with FWHM(l_ap) from MIRI, so l_ap must lie
+   #     in MIRI's range. NIRSpec: FWHM proportional to lambda (no law chosen yet), as before.
    ##
   
-    def getRpixPointSource(self, r_ap, ps, l_i, l_ap):
-        return (np.array(r_ap)/ps) * (l_i/l_ap)
+    def getRpixPointSource(self, r_ap, ps, l_i, l_ap, instrument):
+        if instrument == 'MIRI':
+            if l_ap < MIRI_MRS_SHORTEST_UM:
+                raise ValueError(f'lambda_ap = {l_ap} um lies below MIRI MRS ({MIRI_MRS_SHORTEST_UM} um): the FWHM there would '
+                                 'come from NIRSpec, which has no FWHM law yet')
+            fwhm_ratio = (MIRI_MRS_FWHM_SLOPE * l_i + MIRI_MRS_FWHM_INTERCEPT) / (MIRI_MRS_FWHM_SLOPE * l_ap + MIRI_MRS_FWHM_INTERCEPT)
+        else:
+            fwhm_ratio = l_i / l_ap
+        return (np.array(r_ap)/ps) * fwhm_ratio
     
              #%%   
     def getExtendedSourceRs(self, subcube, base_r):
