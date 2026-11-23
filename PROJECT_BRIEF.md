@@ -502,6 +502,26 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
       - The annulus fits in all 12 bands, in every plane with data: at least 98 valid pixels (ch4-long), 172–690 in the others.
       - ch4-long's last 12 planes (28.633–28.699 µm) have no data at all.
       - The largest multiple with at least 50 pixels everywhere is 2.2, set by ch4-long.
+    - *(Approved 2026-11-23; see "Decisions".)*
+  - **CRETA scales point-source cones with the PSF's FWHM, commit `2818075`** (2026-11-23, my request; waiting for my review; see "Awaiting my OK").
+    - **The change:** r(λ) = r_ap × FWHM(λ) / FWHM(λ_ap) for the cone, and so for the annulus's inner radius, with the FWHM law chosen from each cube's `INSTRUME`.
+      - MIRI MRS follows Law et al. 2023, with FWHM(λ_ap) from MIRI; a `lambda_ap` below 4.9 µm stops with a `ValueError`.
+      - NIRSpec keeps FWHM ∝ λ, as before. Extended sources are unchanged.
+    - **Synthetic test** (`tests/M5/fwhm/test_fwhm_cone.py`):
+      - Setup: the 12 MRS bands and a NIRSpec G395H-like band, each sampled at FWHM/20 per pixel, 121×121 pixels, 0.05 µm per plane. A 1 mJy Gaussian, integrated over each pixel, with the FWHM of Law et al. (MIRI) or ∝ λ (NIRSpec). r_ap = 0.2842″ at 5.4 µm. No background, no noise.
+      - At 0.05″ per pixel, the aperture's pixelisation reached 0.6% at 4.9 µm and 1.7% in the NIRSpec band, hence the finer sampling. The tolerance, 0.003, is unchanged.
+      - **After the change** (all pass):
+        - MIRI R_ap = r_ap × FWHM(λ)/FWHM(5.4) to 2×10⁻¹⁶″, so 1.000 FWHM in every band.
+        - The flux in the cone is 0.9370–0.9372 in every MIRI band (a Gaussian's 0.9375 within pixelisation).
+        - NIRSpec: R_ap = r_ap × λ/5.4, as before; flux in the cone 0.9367–0.9373.
+        - With r_ann_in = 0.5684″, the annulus's inner radius is 2 FWHM(λ) in ch4-long.
+        - `lambda_ap = 4.0 µm` with MIRI cubes stops with the `ValueError`.
+      - **Before** (`bebd239`'s CRETA): the MIRI cone runs from 0.99 FWHM (ch1-short) to 1.42 FWHM (ch4-long), and the flux in it from 0.9232 to 0.9966. NIRSpec is the same as after.
+    - **Regression:** NGC7469's M3 single extraction without background, with an extended-source background, the 3×3 grid, and M5's NIRSpec + MIRI extraction are byte-identical before (`bebd239`) and after (all `.fits` files; `.csv` tables identical). All use cylinders.
+    - **W2246, read only** (`W2246/annulus_fit_fwhm.py`; r_ap = 0.2842″ and r_ann_in = 0.5684″ at 5.4 µm, centred at 8.0 µm):
+      - The cone is 1.00 FWHM and the annulus starts at 2 FWHM in every band: 0.27–0.30″ and 0.54–0.59″ in ch1-short, up to 0.91–1.05″ and 1.82–2.11″ in ch4-long.
+      - The annulus fits all 12 bands in every plane with data, with at least 213 valid pixels (ch4-long; 252–687 in the others).
+      - Every band would also allow a multiple of 3 (the largest tested).
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
@@ -875,7 +895,10 @@ cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1
 cd /Users/tanio/pywork/cafe_work/tests/M5/annulus && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore test_point_source_annulus.py /Users/tanio/Sync/pywork/CAFE > ../logs/test_point_source_annulus.txt 2>&1   # M5: CRETA's per-plane point-source annulus on synthetic cubes with known truth; before the change: the same from annulus/before/ with the checkout cmp/annulus_before (git archive of 96dced6's CRETA)
 cd /Users/tanio/pywork/cafe_work/tests/M3 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore stitch_run.py /Users/tanio/Sync/pywork/CAFE single single_all_bkgsub.txt annulus_after_single_all_bkgsub   # M5: annulus regression; likewise single_all.txt, and annulus_before_* with /Users/tanio/pywork/cafe_work/cmp/annulus_before
 cd /Users/tanio/pywork/cafe_work/tests/M3/out/d6 && ~/miniforge3/envs/cafe-dev/bin/python -W ignore ../../../M5/annulus/regression_compare.py annulus_before_single_all_bkgsub annulus_after_single_all_bkgsub   # M5: before/after identical (.fits, _cube.fits, .csv table); likewise single_all (log ../../../M5/logs/annulus_regression_compare.txt)
-cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore annulus_fit_fwhm.py > ../logs/annulus_fit_fwhm_W2246_c1003.txt   # M5: W2246, one-FWHM cone, multiple 2: annulus pixels per band, largest multiple with >= 50 everywhere
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore annulus_fit_fwhm.py > ../logs/annulus_fit_fwhm_W2246_c1003.txt   # M5: W2246, one-FWHM cone, multiple 2: annulus pixels per band, largest multiple with >= 50 everywhere (run on 9017022, wavelength-scaled cone, r_ap 0.28; after 2818075 the same command gives the FWHM-scaled radii, log ../logs/annulus_fit_fwhm_W2246_c1003_fwhmscaled.txt, r_ap 0.2842 by default)
+cd /Users/tanio/pywork/cafe_work/tests/M5/fwhm && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore test_fwhm_cone.py /Users/tanio/Sync/pywork/CAFE > ../logs/test_fwhm_cone.txt 2>&1   # M5: FWHM-scaled cone on synthetic Gaussians (12 MRS bands + NIRSpec); before: the same from fwhm/before/ with the checkout /Users/tanio/pywork/cafe_work/cmp/fwhm_before (git archive of bebd239's CRETA), log ../logs/test_fwhm_cone_before.txt
+cd /Users/tanio/pywork/cafe_work && tests/M5/fwhm/run_regressions.sh   # M5: NGC7469 M3 single (no background; extended background), 3x3 grid and M5 NIRSpec+MIRI extractions with bebd239's and the current CRETA (logs tests/M5/logs/fwhm_regression_*)
+cd /Users/tanio/pywork/cafe_work && ~/miniforge3/envs/cafe-dev/bin/python -W ignore tests/M5/fwhm/compare_extractions.py extractions/NGC7469_NIRSpec+MIRI_fwhm_before extractions/NGC7469_NIRSpec+MIRI_fwhm_after   # M5: before/after identical; likewise tests/M3/out/d6/fwhm_{before,after}_{single_all,single_all_bkgsub,grid_all}; and cmp of every .fits (log tests/M5/logs/fwhm_regression_compare.txt)
 cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
@@ -1262,6 +1285,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - FWHM(λ_ap) comes from the instrument that covers λ_ap. Extended sources unchanged.
   - Test it on synthetic data with known truth: Gaussian point sources whose FWHM follows Law et al. The fraction of flux in the cone must be the same at every wavelength, and is shown varying before the change. NGC7469's extractions must stay bit-identical.
   - For W2246, r_ap = 0.2842″ at 5.4 µm (one FWHM) and r_ann_in = 0.5684″ (two FWHM): say how they fit in all 12 bands.
+  - *(Done 2026-11-23: commit `2818075`, waiting for my review; my choices in it are under "Awaiting my OK".)*
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1403,6 +1427,12 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - A plane with fewer, or with no room for an annulus, gets a NaN background and so a NaN flux, and CRETA prints how many planes per band. A round number, not set from W2246 (whose smallest plane has 98).
   - **For W2246:** a cone of 0.28″ at 5.4 µm is about one FWHM there (0.284″; Law et al. 2023, Eq. 1: FWHM = 0.033 (λ/µm) + 0.106″). It grows to 1.49″ (1.41 FWHM) at 28.7 µm.
   - *(Decided 2026-11-23: `9017022` approved, with the multiple 2 and the 50-pixel minimum; see "Decisions".)*
+- 2026-11-23: **CRETA's FWHM-scaled point-source cone, commit `2818075`: the change and three choices I made in it** (see M5, W2246).
+  - **NIRSpec cubes keep r_ap × λ/λ_ap even when λ_ap lies in MIRI.** With NIRSpec's FWHM only "∝ λ", its absolute FWHM is unknown, so FWHM(λ_ap) from MIRI cannot set a NIRSpec cone. This keeps NIRSpec unchanged, as asked.
+    - In a NIRSpec + MIRI point-source run the cone then steps at the join: with λ_ap = 5.4 µm, at 5.0 µm it is 0.953 r_ap in MIRI and 0.926 r_ap in NIRSpec (3%).
+  - **A MIRI cube with `lambda_ap` below 4.9 µm stops with a `ValueError`**, rather than extrapolating Law et al. below MIRI. There, FWHM(λ_ap) would have to come from NIRSpec, which has no law.
+    - It also stops a MIRI-only run with such a `lambda_ap`, which used to work with λ scaling. None of the shipped or work-folder parameter files has one.
+  - **The boundary is MIRI MRS's shortest wavelength, 4.9 µm** (`MIRI_MRS_SHORTEST_UM`). Above MIRI's longest wavelength, Law et al. is extrapolated; no instrument covers that range.
 
 ### Biases and small issues flagged
 - 2026-11-04: The repo lives inside a Syncthing folder, which already has `.sync-conflict` files. A sync in the middle of a git operation could corrupt `.git`. Not acted on.
