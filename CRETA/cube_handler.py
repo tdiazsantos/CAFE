@@ -33,7 +33,7 @@ from CRETA.mylmfit2dfun import mylmfit2dfun
 # import ipdb
 
 # Fewest valid pixels in a point source's background annulus: a plane with fewer gets a NaN background, and so a NaN flux
-MIN_ANNULUS_PIXELS = 50
+MIN_ANNULUS_PIXELS = 20
 
 # Ingests and operates on a sub-cube
 class cube_handler:
@@ -154,11 +154,24 @@ class cube_handler:
         print('>> '+self.name_band+': Background subtraction')
         
         if point_source:
-            # The annulus scales with wavelength like the cone (r_in is set at lambda_ap) and reaches out to the largest
-            # circle around the source inside the cube's field (width is not used)
-            self.bckg_rs = self.preprocess.getPointSourceRs(self,r_in)
-            self.width_list = list(np.array(self.preprocess.getFieldRadii(self)) - np.array(self.bckg_rs))
+            # A ring of fixed width. Its inner edge scales like the cone (r_in is set at lambda_ap). Where the ring would
+            # leave the largest circle around the source inside the cube's field, it moves inward just enough to fit, but
+            # never inside the cone: there it gets zero width, and the plane's background and flux are NaN
+            if width <= 0:
+                raise ValueError(f'ann_width = {width}": a point source\'s background ring needs a width > 0')
+            ring_width_pix = np.array(self.preprocess.getExtendedSourceRs(self,width), dtype=float)
+            nominal_inner = np.array(self.preprocess.getPointSourceRs(self,r_in), dtype=float)
+            fitted_inner = np.minimum(nominal_inner, np.array(self.preprocess.getFieldRadii(self)) - ring_width_pix)
+            ring_fits = fitted_inner >= np.array([np.max(cone_radius) for cone_radius in self.rs])
+            self.bckg_rs = list(fitted_inner)
+            self.width_list = list(np.where(ring_fits, ring_width_pix, 0.))
             min_annulus_pixels = MIN_ANNULUS_PIXELS
+            planes_pulled_in = np.sum(ring_fits & (fitted_inner < nominal_inner))
+            if planes_pulled_in:
+                print(f'{self.name_band}: in {planes_pulled_in} of {self.NZ} planes the {width}" ring is pulled in to fit the field')
+            if not ring_fits.all():
+                print(f'{self.name_band}: {np.sum(~ring_fits)} of {self.NZ} planes have no room for the {width}" ring outside '
+                      'the cone: their background and flux are NaN')
             
         else:
             self.bckg_rs = self.preprocess.getExtendedSourceRs(self,r_in)

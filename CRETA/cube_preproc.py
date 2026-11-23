@@ -544,7 +544,7 @@ class cube_preproc:
         annulus_centroid = []
         res_rout = []
         anImg = subcube.cube_before.copy()
-        planes_without_background = 0
+        planes_with_few_pixels = 0
         
         for z in range(len(anImg)):
            
@@ -568,17 +568,18 @@ class cube_preproc:
                 annulus_masks, annulus_data_1d = None, np.array([])
             if annulus_data_1d.size >= min_annulus_pixels:
                 mean, median_sigclip, _ = sigma_clipped_stats(annulus_data_1d)
-            else:  # too few pixels for a background: the plane's background, and so its flux, become NaN
+            else:  # too few pixels, or no annulus, for a background: the plane's background, and so its flux, become NaN
                 median_sigclip = np.nan
-                planes_without_background += 1
+                if annulus_aperture is not None:  # planes with no room for an annulus are reported where it is set
+                    planes_with_few_pixels += 1
             anImg[z,:,:] = anImg[z,:,:]  -  median_sigclip
             annulus.append(annulus_masks)
             annulus_centroid.append([j,k])
             res.append(median_sigclip)
             res_rout.append(r_out)
 
-        if planes_without_background:
-            print(f'{subcube.name_band}: {planes_without_background} of {len(anImg)} planes have fewer than '
+        if planes_with_few_pixels:
+            print(f'{subcube.name_band}: {planes_with_few_pixels} of {len(anImg)} planes have fewer than '
                   f'{min_annulus_pixels} annulus pixels: their background and flux are NaN')
         return  [anImg,res,annulus,annulus_centroid,annulus_aperture_list,res_rout]             
         

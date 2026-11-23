@@ -177,8 +177,12 @@ Both extractions read their parameters from the parameter file (`single_params.t
      - Extended sources keep the same radius at every wavelength.
    - **Background** (single extraction, `background_sub = True`): each plane loses the sigma-clipped median of an annulus around the source; zeros and NaN don't count. The median goes into the output's `Background` column [MJy/sr].
      - Extended source: the annulus runs from `r_ann_in` to `r_ann_in + ann_width` [arcsec], the same at every wavelength.
-     - Point source (M5): `r_ann_in` is set at `lambda_ap` and scales like the cone (with the PSF's FWHM), so the inner radius is a fixed multiple, `r_ann_in / user_r_ap`, of the cone radius. The outer radius is the largest circle around the source inside the cube's field (`getFieldRadii`: the pixels with data in the cube's median image). `ann_width` is not used.
-     - For a point source, a plane whose annulus has fewer than `MIN_ANNULUS_PIXELS` (50, `cube_handler.py`) valid pixels, or no room inside the field, gets a NaN background and so a NaN flux. CRETA prints how many planes per band.
+     - Point source (M5): a ring `ann_width` wide [arcsec] at every wavelength; `ann_width` must be > 0.
+       - Its inner edge is `r_ann_in`, set at `lambda_ap` and scaled like the cone (with the PSF's FWHM), so it is a fixed multiple, `r_ann_in / user_r_ap`, of the cone radius.
+       - In a plane where the ring would leave the largest circle around the source inside the cube's field (`getFieldRadii`: the pixels with data in the cube's median image), it moves inward just enough to fit.
+       - It never moves inside the cone. A plane where the ring cannot fit outside the cone gets a NaN background, and so a NaN flux.
+       - CRETA prints, per band, how many planes have the ring pulled in and how many have no room for it.
+     - For a point source, a plane whose ring has fewer than `MIN_ANNULUS_PIXELS` (20, `cube_handler.py`) valid pixels also gets a NaN background and flux. CRETA prints how many planes per band.
 2. **Stitching** works per aperture or grid point, over the bands in the order of `cubes` in the parameter file.
    - `calculateStitchRatios` gives, for each pair of adjacent bands, r = median(next band) / median(this band) over their overlap. It is 1.0 when they do not overlap or the overlap has no valid data.
    - `stitchSpectrum` (M3) multiplies band i by prod(r[i:]) / prod(r[ref:]), so every band lands on the flux level of the reference band `ref`. A gap is chained through with its ratio of 1.0.
