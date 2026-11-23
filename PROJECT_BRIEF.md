@@ -432,6 +432,47 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
   - Test (`inpars_dsktau_test.py`: each file as `read_inifile` reads it, against `669ebe2`): only DSK_TAU changes, and only in those three files. Every file's continuum parameter object builds, with its values within bounds.
   - The shipped `nirspec-miri_AGN` now differs from the `dskfree` copy only by step 2's two changes (`Source_HOT`, STR_FLX).
 - **NIRSpec + MIRI step closed (2026-11-22, my decision): NIRSpec removes M4's MIRI-only valley.** What is left is logged in "Biases" (2026-11-22): the two end states, and the dust optical depths bent toward a power law.
+- **W2246, MIRI only: CRETA's single extraction (2026-11-23, my request; see "Decisions").** *(Stopped 2026-11-23: with both cube sets, CRETA's centring fails and one stitching ratio is negative. Step 3, the comparison with M3's spectrum and the photometry, not run. Work folder: `tests/M5/` (`extract_W2246.py`, `params/W2246_MIRI_r0.5as_params.txt`, `W2246/centring_diag.py`, `W2246/stitch_diag.py`, `W2246/mast_inventory.py`); cubes linked in `data/W2246/`; extractions in `extractions/W2246_MIRI/` (stage3) and `extractions/W2246_MIRI_c1003/`; logs in `tests/M5/logs/`.)*
+  - **Data** (read only):
+    - `miri/mrs/stage3/`: 12 `Level3_*_s3d.fits`, program 1712, observation 002 (4 dithers), observed 2023-07-17. Pipeline 1.13.4, CRDS `jwst_1214.pmap`, written 2024-03-29. Master background subtracted (`S_MSBSUB = COMPLETE`).
+    - `miri/mrs/mast/202611/` (MAST): 36 s3d cubes, all pipeline 3.0.0, CRDS `jwst_1584.pmap`, written 2026-10-18, `skyalign`, `S_BKDSUB = SKIPPED`.
+      - `sci/`: two products of the same 4 exposures of observation 002. `jw01712-c1003_t001_*` pairs them with the background observation and is master background subtracted (`S_MSBSUB = COMPLETE`). `jw01712-o002_t001_*` has no background subtraction.
+      - `bkg/`: `jw01712-o001_t003_*`, the dedicated background field (`W2246-0526-MIRI-MRS-BKG`, observation 001, 2 exposures).
+      - These cubes have a `WCS-TABLE` extension; CRETA reads them.
+  - **Setup:** a cone of 0.5″ at 5.4 µm (radius ∝ λ), as M3's `W2246_SingleExt_r0.5as.fits` records it (that extraction was not centred). CRETA's centring at 5.4 µm from M3's position 22h46m07.5646s −05d26m34.802s. No aperture correction, no background subtraction, `stitch_band = ch1-short`. `dev` @ `e9ad4a7`.
+  - **The centring fails in both sets.** In ch1-short at 5.4 µm, CRETA's 11×11-pixel box around W2246 sums to less than 0, although W2246 is there (peak 20–22 MJy/sr, 1–2 pixels from the start).
+    - ch1-short: box median −6.6 MJy/sr per plane in stage3 and −6.0 in `c1003`; 109 and 105 of 121 pixels negative.
+    - ch1-long: −3.7 and −4.9 MJy/sr; 102 and 107 negative. ch1-medium is positive (+4.6, +4.2).
+    - So both extractions stayed at M3's position, while CRETA's metadata says `Centering: True`.
+  - **W2246's centroid offset from M3's position, per cube** (CRETA's centring at mid-band; ch1-short at 5.4 µm):
+    - stage3: ch1-short and ch1-long fail; ch1-medium 0.197″ (S); ch2–ch4 0.011–0.045″.
+    - `c1003`: ch1-short and ch1-long fail; ch1-medium 0.205″; ch2–ch4 0.124–0.163″, all to the west (E −0.12 to −0.16″, N −0.05 to +0.01″).
+    - So the `c1003` cubes put W2246 about 0.14″ W of where the stage3 cubes put it. Probably a WCS change between the two pipeline versions (inference).
+  - **Stitching ratios** (CRETA's, band n+1 / band n over their overlap, ch1-short → ch4-long):
+    - stage3: 0.818, **−1.685**, 0.889, 0.937, 0.910, 1.163, 0.963, 1.008, 0.960, 1.167, 1.227.
+    - `c1003`: 0.813, **−5.317**, 1.114, 1.037, 0.945, 1.214, 0.998, 1.033, 1.002, 1.183, 1.208.
+    - The negative one is ch1-medium → ch1-long (6.53–6.63 µm). In `c1003` the two bands' mean fluxes there are +0.013 and −0.057 mJy. Every band from ch1-long on is scaled through it, so the stitched spectrum changes sign from ch1-long on. ch1-short itself is negative: median −0.042 mJy in both sets.
+  - **`c1003`'s ch4-long goes negative beyond 27 µm.** Its median flux is +15.3 mJy at 24.5–25 µm, −6.6 at 27–27.5, −94 at 27.5–28 and −350 mJy at 28–28.5 µm. Stage3 holds 14–21 mJy to 28 µm and is −75 mJy at 28–28.5 µm. The master background probably over-subtracts there (inference).
+  - **The stage3 extraction does not reproduce M3's `W2246_SingleExt_r0.5as.fits`.** This is a diagnosis, not step 3 (inline check, log `logs/stitch_diag_W2246.txt`).
+    - Same position, radius and wavelengths, yet the unstitched fluxes differ by up to 200σ: ch1-short −0.042 vs +0.021 mJy, ch1-long −0.061 vs +0.119 mJy, ch1-medium ×1.40, ch2-short ×1.31, ch4-medium ×1.20, the other bands ×0.96–1.02.
+    - My notebook reads its cubes from `/ssd/up/hotdogs/jwst/W2246/miri/mrs/analysis/20250206_master_bg/` (another machine), with the stage3 path commented out.
+    - Not settled whether the cubes or CRETA's code since then make the difference.
+  - **Photometry for step 3:** `W2246.txt` has two points in 4.9–28.7 µm, 12.0 µm (2.5 ± 0.2 mJy) and 22.0 µm (15.9 ± 1.6 mJy). They are named only `filter`, with width 0 (presumably WISE W3 and W4). There are no WISE response curves yet, so they will be compared with the spectrum interpolated there.
+  - **NIRSpec mega cubes** (`nirspec/ifu/processed/`; read only, not for fitting; my request, 2026-11-23; folder `tests/M5/W2246_megacubes/`):
+    - All four are 190×134×9119 cubes (1.660–5.271 µm observed, 0.05″ pixels), "assembled and sigma clipped by Vayner et al. 2023b algorithm", pipeline 1.13.4, `jwst_1223.pmap`.
+      - HDUs: PRIMARY, SCI, a second SCI and an unnamed third. No NaN; zeros mark missing data.
+      - There is no spatial shift between the versions.
+    - **`fix_wcs`:** in MJy/sr, with the corrected WCS in its first SCI. It is the one for W2246's total SED when we get to NIRSpec (my decision).
+      - **Its second SCI is probably the variance** (≥ 0, zero where there is no data; empty-sky scatter 0.86–1.53 × its square root; not settled). CRETA would need a σ in an `ERR` extension. That HDU's WCS has the new CRPIX but the old CRVAL (1.6″ off).
+      - The third HDU is all zeros (float64).
+    - **`wcs_fix_old`:** a byte-for-byte copy of `fix_wcs`.
+    - **`nuclear2`:** `fix_wcs` converted to F_λ per spaxel, 10⁻¹⁵ erg s⁻¹ cm⁻² µm⁻¹ (constant to 4×10⁻¹⁶), **but its BUNIT still says MJy/sr.**
+      - It keeps the old pipeline WCS, which puts the nucleus 0.25″ elsewhere on the sky.
+      - Corner pixel (1,1) holds a nucleus-like spectrum (zero in `fix_wcs`), close to a 0.15″-radius nuclear sum (ratio 0.98).
+    - **`psf_sub_fix_wcs`:** in the same units as `nuclear2`, **with the same wrong BUNIT**.
+      - It is smoothed spatially by a Gaussian of σ = 2 px (0.1″), minus a compact nuclear model. Within 0.15″ of the nucleus, 4–9% of the flux stays below 3.5 µm and 34–46% above 4.5 µm.
+      - Nothing is subtracted at 1.660–1.775 and 5.200–5.271 µm. Its variance was not updated for the smoothing (inference).
+  - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 
 ### M6 — Cube-fit performance and parallelisation
 - **First item (logged 2026-11-19): R2's fits at the 50 K wall.** In the M4 baseline, 2 of 10 R2 plain fits ended at the 50 K wall between the COO and WRM ranges (WRM_TMP at its lower bound, COO_TMP 48.3 K), with χ² 2.6× the best (see "Biases", 2026-11-18). M6's cube fits will show how often this happens. The candidate remedy is the ratio constraint on the dust temperatures under "Later".
@@ -792,6 +833,12 @@ cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHO
 cd /Users/tanio/pywork/cafe_work/tests/M5 && (for j in 0 1 2; do echo "$j dskfree"; done) | xargs -n 2 -P 3 ./run_fit.sh   # M5: 3 plain fits with the tau01 copy and DSK_TAU = 0.1, True, 0., 0.5, DQ-fixed extraction with the DQ used (out/dskfree_j<j>, logs/fit_dskfree_j<j>.txt)
 cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python dskfree_summary.py > logs/dskfree_summary.txt   # M5: dskfree against hot1750 and tau01: χ², end states, every τ, bounds, HOT_TMP, COO_TMP, 5–6 µm fractions, χ² per band
 cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python inpars_dsktau_test.py /Users/tanio/Sync/pywork/CAFE > logs/inpars_dsktau_test.txt 2>&1   # M5: the seven shipped inpars after 72e9edd against 669ebe2 (DSK_TAU where DSK is free; all else identical)
+cd /Users/tanio/pywork/cafe_work && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python tests/M5/extract_W2246.py > tests/M5/logs/extract_W2246.txt 2>&1   # M5: W2246 MIRI single extraction, stage3 cubes (linked in data/W2246/cubes_miri_stage3/; params tests/M5/params/W2246_MIRI_r0.5as_params.txt; out extractions/W2246_MIRI/)
+cd /Users/tanio/pywork/cafe_work && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python tests/M5/extract_W2246.py cubes_miri_mast_c1003 W2246_MIRI_c1003 > tests/M5/logs/extract_W2246_c1003.txt 2>&1   # M5: the same with the 12 MAST c1003 cubes (linked in data/W2246/cubes_miri_mast_c1003/)
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore centring_diag.py > ../logs/centring_diag_W2246.txt   # M5: W2246's background in CRETA's centring box and CRETA's centring per cube, stage3; with the arguments cubes_miri_mast_c1003 "jw01712-c1003_t001_miri_{band}_s3d.fits" for c1003 (log ../logs/centring_diag_W2246_c1003.txt)
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && for run in W2246_MIRI_c1003 W2246_MIRI; do env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python -W ignore stitch_diag.py /Users/tanio/pywork/cafe_work/extractions/$run/W2246_MIRI_SingleExt_r0.5as.fits; echo; done > ../logs/stitch_diag_W2246_c1003.txt 2>&1   # M5: per-band fluxes, overlap means and ratios, the last band per 0.5 µm
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python -W ignore mast_inventory.py > ../logs/mast_inventory_W2246.txt   # M5: W2246's MAST MIRI cubes: observation, target, band, pipeline, coordinates, background keywords, input exposures
+cd /Users/tanio/pywork/cafe_work/tests/M5/W2246_megacubes && env PYTHONDONTWRITEBYTECODE=1 MPLBACKEND=Agg ~/miniforge3/envs/cafe-dev/bin/python <script>.py   # M5: W2246's NIRSpec mega cubes, read only; scripts inspect_hdus, compare_headers, explore_nucleus, plot_quick_spectrum, make_maps, wcs_offsets, check_unit_scaling, check_hdu2_and_pixel11, test_psf_sub_smoothing, full_pass (writes full_pass/, deleted 2026-11-23), analyse_full_pass (needs full_pass/), spotcheck_megacubes; outputs in <script>_output.txt
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python real_spectra.py > logs/real_spectra.txt   # lines init_feats keeps on R1 and R2, before/after (no fit)
 ```
 
@@ -1150,6 +1197,14 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Log, don't act: (a) with DSK free, HOT_TAU and COO_TAU still end at 8–9 despite the 0.1 starts. Like DSK's role, this is the single-temperature dust components being bent toward a power law, part of the logged limitation. (b) The NGC7469 NIRSpec + MIRI fits have two end states 2% apart in χ². In one, STR is at 0 and DSK_TAU is 0.09. In the other, STR is on and DSK_TAU is 0.39. With the 0.1 starts the fits reach the STR-on one.
   - This closes the NIRSpec + MIRI step: NIRSpec removes M4's MIRI-only valley.
   - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
+- 2026-11-23: **W2246 in M5: MIRI only.**
+  - Test with W2246's MIRI cubes only. The NIRSpec mega cubes stay out of any extraction or fit. When we get to NIRSpec, `fix_wcs` is the mega cube for W2246's total SED.
+  - No aperture correction until W2246's PSF arrives from a collaborator.
+  - The three W2246 folders on `/Volumes/Photon` (MIRI `stage3` and `mast/202611`, NIRSpec `processed`) are read-only data folders (CLAUDE.md §5, commit `aeabec2`).
+  - Extraction: CRETA's single extraction with a cone of 0.5″ at 5.4 µm (M3's `W2246_SingleExt_r0.5as.fits`), centring at 5.4 µm from M3's position, no background subtraction, `stitch_band = ch1-short`. Report W2246's centroid offset per cube.
+  - The MIRI set: the 12 MAST `c1003_t001` cubes (master background subtracted), linked into a folder of their own in the work folder.
+  - Stop if CRETA can't read the cubes, the centring fails or any stitching ratio is ≤ 0. *(2026-11-23: the centring failed and one ratio was negative, as with the stage3 cubes; see M5.)*
+  - Then (step 3) compare the spectrum with M3's, band by band, and the 12.0 and 22.0 µm points with the spectrum interpolated there (no WISE response curves yet).
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1360,6 +1415,16 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-20: **The AGN disc (DSK) takes the near-power-law part of the continuum** (46% of 5–6 µm in M5 step 2 and `hot1750`). A limitation of CAFE's dust components: a temperature gradient, which looks like a power law, has no component of its own. Not something to fix (my decision, 2026-11-20).
 - 2026-11-22: **With DSK free, HOT_TAU and COO_TAU still end at 8–9 despite the 0.1 starts** (NGC7469 NIRSpec + MIRI, `dskfree`: HOT_TAU 8.30, COO_TAU 8.93; `hot1750`: 8.24, 9.18). Like DSK's role, this is the single-temperature dust components being bent toward a power law. Part of the limitation above, not acted on (my decision, 2026-11-22).
 - 2026-11-22: **The NGC7469 NIRSpec + MIRI fits have two end states 2% apart in χ²** (M5, `hot1750` and `dskfree`). One has STR at 0 and DSK_TAU 0.09 (`hot1750`'s best, 200,549.87). The other has STR on and DSK_TAU 0.39 (3,924 higher). With the 0.1 starts, all three `dskfree` fits reach the STR-on state; `hot1750`'s starts reached the lower state in 7 of 10. Not acted on (my decision, 2026-11-22).
+- 2026-11-23: **W2246's MIRI cubes are negative around W2246 in ch1-short and ch1-long, although master background subtracted.** This holds for both `stage3` (pipeline 1.13.4) and MAST `c1003` (3.0.0), both with `S_MSBSUB = COMPLETE`.
+  - Box medians around W2246: −6.6 and −3.7 MJy/sr per plane in stage3, −6.0 and −4.9 in `c1003`.
+  - In the 0.5″ cone this gives negative fluxes (ch1-short median −0.042 mJy). Not acted on.
+- 2026-11-23: **CRETA's centring gives up on faint sources** (`userCentroid`, `cube_preproc.py`).
+  - When the sum of its 11×11-pixel box (5 planes) is ≤ 0, NaN or inf, it returns the start position. It only prints a message, and the extraction goes on, with `Centering: True` in its metadata.
+  - W2246: ch1-short and ch1-long, in both cube sets. Not acted on.
+- 2026-11-23: **CRETA's stitching takes ratios of fluxes near 0** (`stitchSpectrum`).
+  - Each band's factor is a product of overlap ratios. A ratio of two near-zero mean fluxes is meaningless, and a negative one flips the sign of every band scaled through it.
+  - W2246: ch1-medium → ch1-long, −1.68 (stage3) and −5.32 (`c1003`). Not acted on.
+- 2026-11-23: **MAST `c1003` ch4-long of W2246 goes negative beyond 27 µm** (median −94 mJy at 27.5–28 µm, −350 mJy at 28–28.5 µm in the 0.5″ cone). Stage3 is negative only at 28–28.5 µm (−75 mJy). Not acted on.
 - 2026-11-20: **`grainEQTemp` finds each grain's T_eq by inverting a table built on the T_bb values it is given** (`T = T_bb`, `interp1d` in log, extrapolating beyond the ends). So what `grainSizeDF` keeps at one T_bb depends on the other T_bb values in the same call. Example (AGN, carbon cut at 1400 K): 0.317 of the carbon mass at 1148.3 K on the fit's 30-point grid, 0.359 with T_bb = [996.9, 1027.2, 1148.3].
   - The fit always passes its fixed grid. Adding points to it leaves the values at its points unchanged (996.9–1521.3 K, both cuts), so the fit is not affected. Only direct calls with a short T_bb list are. Not acted on.
 - 2026-11-20: **The inpars comment `_HOT_TMP = 571.6 -> <HOT_TMP> = 1250K` is not reproduced** by the grain model. At T_bb = 571.6 K the mass-weighted mean T_eq of the surviving grains is 1196 K (silicates) and 926 K (carbon) for the AGN SED, and 1015 K and 988 K for the ISRF. For the clean-up list.
