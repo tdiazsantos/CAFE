@@ -868,8 +868,8 @@ def get_model_fluxes(params, wave, cont_profs, comps=False, phot_dict=None):
             # fPAH_Tot = np.trapezoid(fPAH/waveMod, logWaveMod)
     else:
         fPAH = np.zeros(waveMod.size)
+        extPAH = np.ones(waveMod.size)
         if comps:
-            extPAH = np.ones(waveMod.size)
             jPAH = np.zeros(waveMod.size)
             # jPAH0 = 0.
             fPAH_0 = np.zeros(waveMod.size)
