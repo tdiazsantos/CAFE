@@ -881,6 +881,25 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
       | ch4-long | 23.53 | 24.00 |
       | all | 10.96 | 11.06 |
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
+- **W2246 test closed (2026-11-24, my decision).** It was a check of CAFE and CRETA, not a fit of W2246's science: no more W2246 runs. W2246's specific results above stay as they are. Its general findings:
+  1. **CRETA's errors are smaller than the channel-to-channel scatter.** This sets CAFE's weights and inflates χ².
+     - The scatter is 1.4826 × the MAD of successive differences / √2.
+     - Per band, it is 1.9–6.0× CRETA's quoted errors.
+     - With the 1% floor it is still 1.0–3.8×: about 1 in ch3 (median S/N about 300) and 3.4–3.8× in ch4-medium and ch4-long (`tests/M5/logs/fit_setup_W2246.txt`).
+  2. **The fits again don't converge to one solution** (M4's known behaviour). In each of the three run sets (lines masked, narrow and broad lines, 1-D residual-fringe corrected), only 1 of 3 plain fits with rounding-level inputs is within Δχ² < 1 of the best; the spreads are 292, 779 and 277.
+  3. **CAFE dims the lines by the PAH extinction, tied to WRM_TAU.** So line fluxes depend on a possibly poorly constrained continuum parameter. A design question, not a bug.
+     - In `get_model_fluxes`, `fLIN = extPAH ×` the Gaussians.
+     - Every shipped inpars file ties `PAH_TAU` to `WRM_TAU`, with `PAH_MIX = 1` (mixed).
+     - `extPAH` is computed only when `PAH_FLX > 0`; `PAH_FLX` is fixed at 1 in every shipped file.
+     - In W2246's fit with lines (WRM_TAU 7.7), the lines kept 0.063 (Paβ), 0.097 (Paα) and 0.26 (Brα) of their unextincted flux.
+  4. **MAST's MRS cubes skip both the residual-fringe step (`S_RESFRI`) and adaptive trace modelling (`S_TRCMOD`).** This holds for all 12 `c1003` cubes, pipeline 3.0.0.
+     - The pipeline's 1-D residual-fringe fitter removes fringes where they dominate the noise:
+       - It used `fit_residual_fringes_1d`, jwst 3.0.0 defaults, env `cafe-jwst`.
+       - ch2-long's 2.89 cm⁻¹ ripple drops from 1.1% to 0.2% of the continuum.
+       - It found the dichroic fringe (0.35–0.48 cm⁻¹) in every ch3 and ch4 band.
+       - With the correction, χ²/N fell most in ch4-medium (16.65 → 9.56) and ch3-long (2.33 → 1.69).
+     - It fails in faint ch1: in ch1-long it fits 1.44 cm⁻¹ and leaves the 2.78 cm⁻¹ ripple (6.5% of the continuum) untouched.
+     - See M8.
 
 ### M6 — Cube-fit performance and parallelisation
 - **First item (logged 2026-11-19): R2's fits at the 50 K wall.** In the M4 baseline, 2 of 10 R2 plain fits ended at the 50 K wall between the COO and WRM ranges (WRM_TMP at its lower bound, COO_TMP 48.3 K), with χ² 2.6× the best (see "Biases", 2026-11-18). M6's cube fits will show how often this happens. The candidate remedy is the ratio constraint on the dust temperatures under "Later".
@@ -908,6 +927,15 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 - Removing dead and commented-out code. Includes `sliceGridExtractionPhotometry` in `CRETA/cube_handler.py` (not called; it still passes the cube's 3-D WCS to `aperture_photometry`, G4).
 - `inpars_jwst_NGC7469_NIRSpec+MIRI_reg.ini` (logged 2026-11-20): it cannot be loaded (see "Biases"). Bringing it to the current format needs my choices then (line lists, PAH and opacity tables, OPC/Vgrad settings). `read_inst`'s case-insensitive matching (option (i), chosen 2026-11-20 for this file) waits with it.
 - The other items logged for the clean-up in this brief (e.g. keywords the parameter file overrides, the README's keyword tables, the line table's row order, G13).
+
+### M8 — Point-source cubes prepared before CRETA *(added 2026-11-24; starts only after my approval)*
+- Rebuild point-source cubes from the stage-2 cal files with `adaptive_trace_model`, apply the 1-D residual-fringe correction (Law & Clarke 2026, arXiv:2603.26916), and test it.
+- Why (W2246 test, M5, finding 4):
+  - MAST's MRS cubes skip both steps.
+  - The 1-D fitter with its defaults fails in faint ch1.
+- Needs:
+  - the cal files, which my MAST downloads don't include (checked for W2246, 2026-11-24);
+  - jwst ≥ 3.0.0 (env `cafe-jwst`). There, `adaptive_trace_model` is off by default and runs in calwebb_spec3 before cube_build; its oversampling factor is `oversample`.
 
 ### CRETA aperture-correction path (separate item, not a milestone)
 - G10, G11 and G11's two related problems (see "GOALS bugs found after M2"): fixed and tested end to end together once CRETA's PSF cubes are found, not with stand-in PSFs.
@@ -1029,6 +1057,11 @@ git -C /Users/tanio/Sync/pywork/CAFE ls-remote upstream
 cd /Users/tanio/pywork/cafe_work
 ~/miniforge3/bin/mamba env create -f /Users/tanio/Sync/pywork/CAFE/environment-dev.yml -y
 ~/miniforge3/bin/mamba env create -f /Users/tanio/Sync/pywork/CAFE/environment-legacy.yml -y
+```
+`cafe-jwst` (2026-11-24, my request; for the JWST pipeline's own steps, e.g. the 1-D residual-fringe fitter; no environment file): jwst 3.0.0 from PyPI, with numpy 2.5.5, scipy 1.18.1, astropy 8.0.3.
+```
+~/miniforge3/bin/mamba create -y -q -n cafe-jwst -c conda-forge python=3.12 pip
+~/miniforge3/envs/cafe-jwst/bin/python -m pip install jwst
 ```
 scikit-learn (2026-11-04). It is now in both env files, so a fresh `env create` includes it. In the existing envs:
 ```
