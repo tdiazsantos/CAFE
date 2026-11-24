@@ -882,10 +882,12 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
       | all | 10.96 | 11.06 |
   - Cost (information only): each extraction 16–22 s, 0.7 GB; the mega-cube comparison about 23 min. Its 823 MB of scratch boxes (`full_pass/`) were deleted (my request).
 - **W2246 test closed (2026-11-24, my decision).** It was a check of CAFE and CRETA, not a fit of W2246's science: no more W2246 runs. W2246's specific results above stay as they are. Its general findings:
-  1. **CRETA's errors are smaller than the channel-to-channel scatter.** This sets CAFE's weights and inflates χ².
-     - The scatter is 1.4826 × the MAD of successive differences / √2.
-     - Per band, it is 1.9–6.0× CRETA's quoted errors.
-     - With the 1% floor it is still 1.0–3.8×: about 1 in ch3 (median S/N about 300) and 3.4–3.8× in ch4-medium and ch4-long (`tests/M5/logs/fit_setup_W2246.txt`).
+  1. **CRETA's errors are too small in every band of both sources** (W2246 and NGC7469; added 2026-11-24, my decision). This sets CAFE's weights and inflates χ².
+     - The scatter is 1.4826 × the MAD of successive differences / √2, per band, on the spectrum as `fit_spec` reads it.
+     - It is about 2–6× CRETA's quoted errors in W2246 (1.9–6.0; `tests/M5/logs/fit_setup_W2246.txt`).
+     - It is 5–40× in NGC7469's NIRSpec + MIRI extraction (`extractions/NGC7469_NIRSpec+MIRI_dqfix/`, median S/N 600–7,000; `tests/M5/scatter_check.py`, log `tests/M5/logs/scatter_check_NGC7469.txt`).
+     - The 1% floor hides it in bright spectra: in NGC7469 the errors are ≥ the scatter in 13 of 15 bands (scatter / error 0.24–0.78; 1.01 in ch4-medium, 1.58 in ch4-long).
+     - It does not hide it in faint ones: W2246 is still 1.5–3.8× short outside ch3, and about 1 in ch3 (median S/N about 300).
   2. **The fits again don't converge to one solution** (M4's known behaviour). In each of the three run sets (lines masked, narrow and broad lines, 1-D residual-fringe corrected), only 1 of 3 plain fits with rounding-level inputs is within Δχ² < 1 of the best; the spreads are 292, 779 and 277.
   3. **CAFE dims the lines by the PAH extinction, tied to WRM_TAU.** So line fluxes depend on a possibly poorly constrained continuum parameter. A design question, not a bug.
      - In `get_model_fluxes`, `fLIN = extPAH ×` the Gaussians.
@@ -930,6 +932,7 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 
 ### M8 — Point-source cubes prepared before CRETA *(added 2026-11-24; starts only after my approval)*
 - Rebuild point-source cubes from the stage-2 cal files with `adaptive_trace_model`, apply the 1-D residual-fringe correction (Law & Clarke 2026, arXiv:2603.26916), and test it.
+- **The PSF-based aperture correction is part of M8** (2026-11-24, my decision). Compute it with the same cone and the same background annulus as the data: MIRI's real PSF wings put some of the source's light in the annulus, so the PSF must lose the same annulus background (decided for W2246, 2026-11-23).
 - Why (W2246 test, M5, finding 4):
   - MAST's MRS cubes skip both steps.
   - The 1-D fitter with its defaults fails in faint ch1.
@@ -939,13 +942,31 @@ Milestone split decided 2026-11-15 (my decision): M4 to M7 below. **Each milesto
 
 ### CRETA aperture-correction path (separate item, not a milestone)
 - G10, G11 and G11's two related problems (see "GOALS bugs found after M2"): fixed and tested end to end together once CRETA's PSF cubes are found, not with stand-in PSFs.
-- **For W2246, when its PSF arrives** (my decision, 2026-11-23): compute the aperture correction with the same cone and the same background annulus as the data. MIRI's real PSF wings put some of the source's light in the annulus, so the PSF must lose the same annulus background.
+- *(The W2246 to-do "when its PSF arrives, compute the aperture correction with the same cone and annulus" is closed (2026-11-24, my decision). The PSF-based aperture correction becomes part of M8 and won't wait for PSFs here.)*
 
 ### Later (do not start)
 - Tests and CI.
 - **A NIRSpec FWHM law for CRETA's point-source cones** (logged 2026-11-23; my choice to make).
   - Until then, NIRSpec cones scale with λ (FWHM ∝ λ), and a MIRI cube needs `lambda_ap` ≥ 4.9 µm (`2818075`).
   - With a NIRSpec law, any `lambda_ap` works, and the cone is continuous at the NIRSpec–MIRI join. Today, with λ_ap = 5.4 µm, it steps by 3% at 5.0 µm.
+  - **Published laws** (read-only search, 2026-11-24, my request; λ in µm, FWHM in arcsec). No measured law like Law et al. 2023's for MIRI exists from STScI or the NIRSpec team: JDox, the pipeline docs, Jakobsen et al. 2022, and Böker et al. 2022 and 2023 give none.
+    - **D'Eugenio et al. 2024** (Nature Astronomy 8, 1443; arXiv:2308.06317, Methods, Eqs. 2–4, Fig. 7; equations checked on the arXiv text):
+      - Empirical: matching NIRCam images of two galaxies (GS-10578, GS-3073) to synthetic images from drizzled PRISM cubes (0.03″ spaxels).
+      - Along the slices (PSF major axis): FWHM = 0.12 + 1.9 λ exp(−24.4/λ).
+      - Across the slices: FWHM = 0.09 + 0.2 λ exp(−12.5/λ).
+      - Eq. 2 is a star near the field's edge: 0.13 + 1.6 λ exp(−21.4/λ).
+      - No uncertainties and no validity range. They note an unexplained drop between F210M and F277W, not modelled.
+    - **Pascalau et al. 2026** (arXiv:2603.00232, §3.1, Eq. 1; checked on the arXiv text):
+      - σ = 0.076 + 0.013 λ exp(−7.6/λ), the same form fitted to STPSF's PSF sizes. It is circular: the geometric mean of the along- and across-slice FWHM, which differ by < 10% at 4–5.3 µm. FWHM 0.22″ at 5.43 µm.
+      - STPSF's NIRSpec IFU broadening is a fixed 0.05″ Gaussian σ that its own code calls approximate. So this curve is a model, not a measurement. Jones et al. 2026 (arXiv:2509.20455) found STPSF agrees with calibration stars, qualitatively.
+    - **Measurements without a formula:** Jones et al. 2026 (calibration stars of PIDs 1219, 1222 and 1537); Marshall et al. 2025 (0.14″ at 3.35 µm, 0.18″ at 4.52 µm); Goold et al. 2026; Law et al. 2026 (arXiv:2603.26916, an unpublished low-order fit).
+    - The pipeline has no NIRSpec formula. Its point-source radius against λ is a table in the CRDS `extract1d` reference file (not downloaded).
+    - **What they imply:**
+      - Both laws are flat below about 3 µm and rise towards 5 µm; neither is ∝ λ.
+      - FWHM at 2 / 3 / 4 / 5 µm: D'Eugenio along the slices 0.120 / 0.122 / 0.137 / 0.192″, across 0.091 / 0.099 / 0.125 / 0.172″; Pascalau 0.180 / 0.182 / 0.197 / 0.212″.
+      - So the two differ by about 1.8× at 2 µm.
+      - CRETA's FWHM ∝ λ, anchored at 5 µm, would give about 2–3× smaller cones than either at 1–2 µm.
+    - *(My choice before any code; see "Awaiting my OK".)*
 - R1's two end states (M4 stage 3, logged 2026-11-18): A (HOT 665 K, STB ≈ 0) and B, 773 lower (HOT at its 200 K lower bound, STB_FLX 0.58, COO 16 K), whose net gain comes from MIRI channel 4C (24.4–28.8 µm observed; 39% of R1's χ²). Look at channel 4C's data and what drives B. R1 fitted without channel 4C stays here too (decided 2026-11-19).
 - S1c with several noise seeds (M4 stage 3, logged 2026-11-18), to tell a bias in COO_TMP, COO_TAU and WRM from the noise of one realisation.
 - A NIRSpec + MIRI spectrum (from M4, logged 2026-11-18), for NGC7469 also for the HOT–STB degeneracy (decided 2026-11-19). What the pre-sync folder holds (checked 2026-11-19, read-only):
@@ -1014,6 +1035,16 @@ Each was found in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers a
   - Related to G11: the writers for missing PSF tables (`userAPI.py:130`, `:152`, `:187`) write to paths relative to the current directory.
 - **G14: the dust emissivity jumps in temperature** (logged 2026-11-17; found in M4 stage 2). `grain_totemissivity` (`dustgrainfunc.py`, non-FASTTEMP branch) interpolates log j linearly in log T between the two grid temperatures nearest to T (`np.argsort(tdiff)[:2]`), not the two that bracket T. The grid (`cafe_helper.py`: `geomspace(33, 1780, 30) − 30`) is not uniform in log T, so in part of each interval the code extrapolates from the pair on one side, and j jumps where the pair changes, at T = √(T₍ᵢ₋₁₎T₍ᵢ₊₁₎): 28 temperatures. Median jump over R1's observed range: a factor 17 at 6.35 K, 46% at 12.5 K, 13% at 19.1 K, 5% at 26.6 K, 1% at 56 K, 0.2% at 649.5 K. Fits stop on the jumps (M4 stage 2: R2's HOT_TMP at 649.49 K; R1's lowest χ² with COO_TMP at 6.35 K). Same code and grid in GOALS `master` (`ca10c84`). Failing case: `tests/M4/emissivity_jumps.py` (work folder). *(Fixed on `dev` 2026-11-18, commit `93a90dc`, approved 2026-11-18; test `tests/M4/test_G14_emissivity.py`. No PR to GOALS.)*
 - **G15: `mask_spec` drops every channel with flux < 0** (logged 2026-11-19; first noted 2026-11-18, see "Biases"). Both branches (cube, `cafe_lib.py:91`; 1-D, `:104`, at `84dc4c1`) add `(data.fluxes < 0)` to the mask, which was never intended. In a faint spectrum or spaxel whose noise reaches below 0, the fit sees only the channels where the noise is positive and fits data biased high, more so the fainter the source. Same code in GOALS `master` (`ca10c84`, `cafe_lib.py:90`, `:103`). Failing case and test in `tests/mask_spec/` (work folder): at S/N 1 per channel `mask_spec` dropped 16% of the channels and the level fitted to the rest was 1.29× the truth (2.02× at S/N 0.5, 1.03× at S/N 2, 1.00 from S/N 5 up); three CAFE fits of a faint synthetic spectrum (S/N 1) gave a continuum 1.23–1.28× the truth before the fix and 0.95–0.99× after. *(Fixed on `dev` 2026-11-19, commit `3fd7e7e`, awaiting my approval. No PR to GOALS.)*
+- **G16: `get_model_fluxes` stops with a `NameError` when `PAH_FLX = 0` and lines are in the fit** (logged 2026-11-24; found by reading, from the W2246 test's finding 3).
+  - With the PAH component off, `extPAH` was set only when `comps` was True (`cafe_lib.py:872` at `c946aab`).
+  - But `fLIN = extPAH ×` the Gaussians (`:1013`) needs it in both paths, so the fit's objective (`comps=False`) raised `UnboundLocalError`.
+  - Same code in GOALS `master` (`ca10c84`, `cafe_lib.py:873`). No shipped file sets `PAH_FLX = 0`.
+  - Fix: `extPAH = 1` in that branch for both paths, as the `comps=True` path already set it. So with PAH_FLX = 0 the lines are not dimmed, in both paths.
+  - Failing case and test in `tests/pah_flx_zero/` (work folder), on a noiseless synthetic continuum with one line, PAH_FLX = 0:
+    - before the fix: the `NameError`;
+    - after it: the `comps=False` model equals the sum of the `comps=True` components exactly; fPAH = 0; extPAH = 1; fLIN equals the line's unextincted Gaussian exactly;
+    - with `PAH_FLX = 1`, the model is bit-identical before and after.
+  - *(Fixed on `dev` 2026-11-24, commit `6e7aee1`, awaiting my approval. No PR to GOALS.)*
 - **G13: `save_asdf` uses an undefined `self`** (logged 2026-11-15; found by the static name check). `cafe_io.save_asdf(cafe, …)` writes to `self.cafe_dir + "output/last_unnamed_cafefit.asdf"` when `file_name` is None (`cafe_io.py:1138`, GOALS code, 2023), so that call raises a `NameError`; it would also write into the repo's `CAFE/output/`. `save_products` always passes `file_name`, so the normal workflow is not affected. Not fixed.
 - **G12: the single extraction's metadata records the background annulus from the keywords** (logged 2026-11-15; found by reading). `meta_dict` (`creta.py:351–353` at `8177bb6`) takes `bkg_r_in` and `bkg_an_w` from the keywords `r_ann_in` and `ann_width` (default `None`), not from the parameter file's values (`r_in`, `width`). Metadata only.
   - Failing case (real single extraction, `single_all_bkgmeta.txt` = `single_all.txt` with `r_ann_in = 0.8`, `ann_width = 0.3`, background subtraction off; on `eb89a4f`): the metadata string in the `.fits` table header records `'bkg_r_in': None, 'bkg_an_w': None`.
@@ -1246,6 +1277,9 @@ cd /Users/tanio/pywork/cafe_work/tests/M4 && env PYTHONDONTWRITEBYTECODE=1 ~/min
 cd /Users/tanio/pywork/cafe_work/tests/M4 && env PYTHONDONTWRITEBYTECODE=1 ~/miniforge3/envs/cafe-dev/bin/python stage3_cost.py > logs/stage3_cost.txt   # stage 3 cost (nfev, wall time) and restart-chain convergence, read-only (2026-11-19)
 cd /Users/tanio/Sync/pywork/CAFE && mkdir -p /Users/tanio/pywork/cafe_work/cmp/dev_84dc4c1 && git archive 84dc4c1 CAFE | tar -x -C /Users/tanio/pywork/cafe_work/cmp/dev_84dc4c1   # before the mask_spec fix; cmp/dev_maskfix = the same with 3fd7e7e's cafe_lib.py
 cd /Users/tanio/pywork/cafe_work/tests/mask_spec && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python mask_level.py > logs/mask_level.txt   # G15: what mask_spec hands to the fit, S/N 0.5-10, before/after
+cd /Users/tanio/Sync/pywork/CAFE && mkdir -p /Users/tanio/pywork/cafe_work/tests/pah_flx_zero/checkout_before && git archive c946aab CAFE | tar -x -C /Users/tanio/pywork/cafe_work/tests/pah_flx_zero/checkout_before   # G16: the code before the fix (deleted after the test; recreate to rerun)
+cd /Users/tanio/pywork/cafe_work/tests/pah_flx_zero && for checkout in checkout_before /Users/tanio/Sync/pywork/CAFE; do label=$([ $checkout = checkout_before ] && echo before || echo after); env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=$checkout ~/miniforge3/envs/cafe-dev/bin/python -W ignore pah_flx_zero_test.py $(cd $checkout && pwd) $label > log_$label.txt 2>&1; done   # G16: before, the NameError (exit 1); after, the checks pass (exit 0); then compare model_pah_flx_1_before.npy and _after.npy (identical)
+cd /Users/tanio/pywork/cafe_work/tests/M5 && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/Sync/pywork/CAFE ~/miniforge3/envs/cafe-dev/bin/python -W ignore scatter_check.py /Users/tanio/pywork/cafe_work/extractions/NGC7469_NIRSpec+MIRI_dqfix/ NGC7469_NIRSpec+MIRI_SingleExt_r1.5as_cube.fits 0.0163 > logs/scatter_check_NGC7469.txt   # M5: channel-to-channel scatter / CRETA's errors per band, read as fit_spec reads it
 cd /Users/tanio/pywork/cafe_work/tests/mask_spec && ~/miniforge3/envs/cafe-dev/bin/python faint_make.py && xargs -P 3 -L 1 ./run_faint.sh < queue.txt && ~/miniforge3/envs/cafe-dev/bin/python faint_summary.py > logs/faint_summary.txt   # G15: faint CAFE fits before/after (out/<before|after>/seed<k>)
 cd /Users/tanio/pywork/cafe_work/tests/init_feats && env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/tanio/pywork/cafe_work/cmp/dev_maskfix ~/miniforge3/envs/cafe-dev/bin/python line_selection.py > logs/line_selection.txt   # init_feats line pre-selection test, 1000 draws, before/after
 cd /Users/tanio/Sync/pywork/CAFE && W=/Users/tanio/pywork/cafe_work && git archive b8acb9c CAFE | tar -x -C $W/cmp/dev_b8acb9c && git archive 688a02a CAFE | tar -x -C $W/cmp/dev_flux0abs   # before/after the flux0 change (dev_flux0abs was made from b8acb9c plus the tested cafe_helper.py; identical to 688a02a's)
@@ -1771,6 +1805,13 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Then 3 plain fits (j = 0, 1, 2), reported next to the first run (lines masked).
   - **No fit until the PSF arrives.**
   - Commit the brief, show me what a push of `dev` to my fork would publish, and stop.
+- 2026-11-24: **W2246 test closed** (see M5): it was to check CAFE and CRETA, not to fit W2246's science; no more W2246 runs. Only its general findings go in the brief; W2246's specific results stay as they are. **New milestone M8** after M7 (point-source cubes prepared before CRETA); it starts only after my approval.
+- 2026-11-24: **After the W2246 test.**
+  - **Finding (1) is general:** CRETA's errors are too small in every band of both sources (see M5, finding 1).
+  - **NIRSpec FWHM law:** read-only search for a published formula first, then my choice before any code (see "Later").
+  - **The PSF-based aperture correction becomes part of M8.** It won't wait for PSFs here; the "when W2246's PSF arrives" to-do is closed.
+  - **G16 fixed now:** own commit, failing case first, diff hunk by hunk with its reason, and a test.
+  - **Photometry for now: HST and ALMA only, monochromatic only, so no filter curves.** Plan first, no code: a calibration floor per instrument, points beyond 1000 µm rest not used, and the reference wavelength of a monochromatic point (see "Awaiting my OK").
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1820,6 +1861,33 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-17: **A component's TAU at 0: fix its MIX and COV too?** (from M4 step 1) The model skips a component's extinction when its TAU is 0 (`if p["STB_TAU"] > 0: … else: ext = 1`), so MIX and COV then have no effect, as the other parameters do when `_FLX` is 0. `check_fit_pars` fixes the TAU at 0 but leaves MIX and COV free: a free parameter with no effect, so no error bars and a refit. Free in the shipped inpars: `STB_COV` (SB, nirspec-miri SB, IIZw096). Recommended: yes, the same rule as for `_FLX`. *(Decided 2026-11-17: yes, under one principle; see "Decisions".)*
 - 2026-11-17: **Keep a parameter free when another component's expression uses it?** (from M4 step 1) All 7 shipped inpars tie `PAH_TAU` to `WRM_TAU`. When `WRM_FLX` reaches 0, `check_fit_pars` fixes `WRM_TAU` (before and after `d6bd782`), although it still sets the PAH extinction. Recommended: the zero-flux (and zero-TAU) freeze leaves free any parameter that a parameter of another component uses in its expression. *(Decided 2026-11-17: yes, under one principle; see "Decisions".)*
 - 2026-11-19: **Commits `3fd7e7e` (`mask_spec`, G15) and `5e70c62` (`init_feats` peak estimate)**, with their diffs, reasons and tests. Not pushed. *(Approved 2026-11-19; see "Decisions".)*
+- 2026-11-24: **Commit `6e7aee1` (G16, `get_model_fluxes` with `PAH_FLX = 0`)**, with its diff, reason and test. Not pushed.
+- 2026-11-24: **The NIRSpec FWHM law for CRETA's cones** (see "Later" for the sources). The options:
+  - (a) D'Eugenio et al. 2024, along and across the slices, combined (e.g. their geometric mean) or the along-slice one;
+  - (b) Pascalau et al. 2026 (STPSF-based, circular);
+  - (c) keep FWHM ∝ λ;
+  - (d) fit our own law to calibration-star cubes (PIDs 1128, 1219, 1222, 1536, 1537 and 3399; needs downloads).
+- 2026-11-24: **Photometry plan: HST and ALMA, monochromatic only** (my decision of the same day; plan, no code). Proposals:
+  - **Calibration floor per instrument**, added in quadrature: σ_fit² = σ² + (f × F)². It is applied in the fit like the spectrum's floor; the products keep the quoted errors. Documented values (f is my choice):
+    - HST WFC3/UVIS: absolute up to 1.5%, internal 0.5% for wide, medium and narrow filters (WFC3 Data Handbook v6.0 §5.7; ISR 2021-04).
+    - HST WFC3/IR: 1–2% absolute, 1% statistical; repeatability 1.5% in staring mode (Data Handbook §7.11; ISR 2020-10).
+    - HST ACS/WFC: about 1% external (Bohlin 2016, AJ 152, 60); the ACS Data Handbook §5.1.2 says 1–2%.
+    - ALMA: better than 5% in Bands 1–5, 10% in Bands 6–8, 20% in Bands 9–10 (Cycle 13 Proposer's Guide, Appendix A.9.2; not stated as 1σ).
+  - **How CAFE knows a point's instrument:**
+    - The name column starts with a key: `HST_WFC3UVIS_`, `HST_WFC3IR_`, `HST_ACSWFC_` or `ALMA_`. A small table in `CAFE/tables/` holds each key's floor and its source.
+    - For ALMA, the band comes from the point's frequency, using the documented band ranges.
+    - `read_phot` refuses an unknown key, with a message listing the known ones, so photometry still enters only once its origin is known.
+    - Alternative: a sixth column for the instrument.
+  - **Points beyond 1000 µm rest are not used.** `read_phot` raises a `ValueError` naming each such point (name, observed and rest wavelength); the user removes them from the file.
+    - 1000 µm is where CAFE's source SEDs stop (they are clamped beyond) and where the grain cross-section tables end.
+    - `read_phot` already needs `read_spec` first, for z.
+  - **Monochromatic only:** `read_phot` refuses a point whose width is not 0. A width of 0 already makes `synphot` take the monochromatic path, whatever `DoFilter` is.
+  - **The reference wavelength of a monochromatic point:**
+    - HST: the filter's pivot wavelength λ_p (`PHOTPLAM`), with F_ν = ⟨F_λ⟩ λ_p²/c, the same for ST and AB magnitudes (Tokunaga & Vacca 2005, Eq. A10; WFC3 and ACS Instrument Handbooks).
+      - This is exact for spectra flat in F_ν or in F_λ.
+      - For F_ν ∝ λ^−2 or λ^4 the band average is about 0.3% high for a 10%-wide band, 1.3% for 20%, 3% for 30% and 9% for 50% (top-hat illustration). Wide HST filters span 20–45%.
+      - An optional check: a table of pivot wavelengths per filter, against which `read_phot` compares the given wavelength.
+    - ALMA: the frequency the flux density refers to, i.e. the continuum image's reference frequency (CASA tclean `reffreq`, by default the middle of the selected range; `CRVAL3` in the FITS). Not the proposal's representative frequency, which is a planning parameter. Given in the file as c/ν in µm.
 - 2026-11-19: **Commit `688a02a` (`flux0` = the median |flux| of its 20 channels)**, with its diff, reason and test (`tests/flux0_abs/`, work folder). Not pushed. DESIGN.md: `f4af609`.
   - Bit-identical: 108 windows with all 20 channels > 0 (10 noisy synthetic spectra, R1, R2) give the same `flux0` bit for bit.
   - Faint truth: CAFE's own continuum at the AGN inpars' starting values, with no lines and no PAHs. The S/N per channel falls log-linearly from 10 to 0.1, so it is 0.16 at 24 µm. Seeds 4, 7 and 19 are the first three whose COO window median is ≤ 0.
