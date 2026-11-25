@@ -93,3 +93,9 @@
 ## 10. Test reports (decided 2026-11-15)
 - Every test report starts with its setup: the spectrum file and z, the inpars and opt files, the photometry with its values and origin, and the number of free parameters.
 - The fake-photometry setup is only for functional checks that compare code versions on identical input. Never use it to judge parameter values or fit stability.
+
+## 11. Code comments (decided 2026-11-25)
+- Code comments describe the code's intent, briefly.
+- A comment on a variable's definition may say what it holds and its units.
+- Comments never record a particular choice or decision made now (e.g. "for now", "only HST and ALMA", "as decided", "monochromatic only until…"), since those can be broadened later. Decisions and their reasons belong in `PROJECT_BRIEF.md`.
+- The rule applies retroactively, to every comment added or changed on `dev` since `legacy-2026-11`.
