@@ -674,6 +674,21 @@ class specmod:
         print('Phot data:',file_dir+file_name)
         tab = np.genfromtxt(file_dir+file_name, comments='#', dtype='str')
         tab = tab[np.argsort(tab[:,1].astype(float))]
+        # Each label (instrument and filter, e.g. HST_WFC3IR_F160W) appears once; the points are monochromatic (width 0);
+        # none lies beyond 1000 um rest, where CAFE's source SEDs and grain tables end
+        labels, label_counts = np.unique(tab[:,0], return_counts=True)
+        if np.any(label_counts > 1):
+            raise ValueError('Each photometric label must appear once. Repeated: ' + ', '.join(labels[label_counts > 1]))
+        widths = tab[:,4].astype(float)
+        if np.any(widths != 0):
+            raise ValueError('Photometric points must be monochromatic (width 0): '
+                             + ', '.join(f'{label} (width {width:g} um)' for label, width in zip(tab[widths != 0, 0], widths[widths != 0])))
+        observed_waves = tab[:,1].astype(float)
+        beyond_rest_limit = observed_waves / (1+self.z) > 1000.
+        if np.any(beyond_rest_limit):
+            raise ValueError('Photometric points beyond 1000 um rest are not used; remove them from the file: '
+                             + ', '.join(f'{label} ({wave:g} um observed, {wave/(1+self.z):g} um rest)'
+                                         for label, wave in zip(tab[beyond_rest_limit, 0], observed_waves[beyond_rest_limit])))
         self.pwaves = tab[:,1].astype(float) / (1+self.z)
         self.pfluxes = tab[:,2].astype(float) / (1+self.z)
         self.pflux_uncs = tab[:,3].astype(float) / (1+self.z)

@@ -110,7 +110,17 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
    - Moves to the rest frame: `wave/(1+z)`, `flux/(1+z)`, `flux_unc/(1+z)`.
    - Options (M3): `flux_scale` multiplies the fluxes and uncertainties; `ignore_DQ=True` sets all DQ masks to 0.
    - Side effect: when the input is not a CRETA cube, writes `./dummy.fits` into the current directory.
-2. **`read_phot(...)`**: optional. Sorts the points by wavelength (M3).
+2. **`read_phot(file_name, file_dir)`**: optional, after `read_spec` (it uses z). Sorts the points by wavelength (M3).
+   - The file has five columns: label, wavelength [µm], flux density [Jy], uncertainty [Jy], width [µm].
+   - The label identifies the filter: instrument and filter in one string without spaces, e.g. `HST_WFC3IR_F160W` or `ALMA_B7`. Future filter curves will be keyed on it.
+   - Photometry is HST and ALMA, monochromatic only (2026-11-25).
+     - HST points are given at the filter's pivot wavelength (`PHOTPLAM`).
+     - ALMA points are given at the continuum image's reference frequency (CASA `reffreq`, `CRVAL3` in the FITS image), as c/ν in µm.
+     - CAFE adds no calibration floor to photometric uncertainties; they should already include it.
+   - It raises a `ValueError` naming the points for any of three cases, and the object keeps its previous photometry:
+     - a repeated label;
+     - a width other than 0;
+     - a point beyond 1000 µm rest (with its observed and rest wavelength), where CAFE's source SEDs and grain tables end.
 3. **`fit_spec(inparfile, optfile)`**
    1. `mask_spec` produces `spec_dict` with `wave`, `flux`, `flux_unc` and `weight`.
       - It drops the channels flagged in the DQ mask, NaN channels and channels more than 1000 × the MAD-based σ above the median. It keeps channels with flux < 0 (G15).
