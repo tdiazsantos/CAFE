@@ -2138,8 +2138,8 @@ def check_fit_pars(
     ### Fix the parameters that no longer affect the model, or the fit returns no errors.
     ### The model drops a component whose flux is 0 (fix all its other parameters) and
     ### skips the extinction of a component whose optical depth is 0 (fix its MIX and
-    ### COV). Keep free a parameter that another component's expression uses (WRM_TAU in
-    ### PAH_TAU = WRM_TAU). The onion parameters are dealt with above
+    ### COV). Keep free a parameter that another parameter's expression uses. The onion
+    ### parameters are dealt with above
     for par in params:
         component_dropped = (
             par[:4] + "FLX" in params

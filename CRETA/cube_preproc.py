@@ -224,7 +224,7 @@ class cube_preproc:
    # @ps: the channel's pixel scale
    # @l_i: the target lambda
    # @instrument: the cube's instrument (INSTRUME). MIRI: the MRS FWHM law, with FWHM(l_ap) from MIRI, so l_ap must lie
-   #     in MIRI's range. NIRSpec: FWHM proportional to lambda (no law chosen yet), as before.
+   #     in MIRI's range. NIRSpec: FWHM proportional to lambda.
    ##
   
     def getRpixPointSource(self, r_ap, ps, l_i, l_ap, instrument):
@@ -551,7 +551,7 @@ class cube_preproc:
             img = anImg[z,:,:]
             j,k= subcube.xys[z]
             # None: no room for a point source's annulus inside the field (only point sources set a minimum; an extended
-            # source's annulus is built as before)
+            # source always gets its annulus)
             annulus_aperture = None if min_annulus_pixels and r_out[z] <= r_in[z] else CircularAnnulus([j,k], r_in=r_in[z], r_out=r_out[z])
             # if r_in[z] > subcube.rs[z]:
             #     print("=== WARNING ===  "+subcube.name_band+" [ lambda"+str(subcube.ls[z])+"] Annulus inner r("+str(r_in[z])+") is greater than aperture("+str(subcube.rs[z])+")")

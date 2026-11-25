@@ -52,7 +52,7 @@ def cafe_grinder(self, params, spec, phot):
     scale_peaks(params, 1 / spec_norm_factor)
     self.cont_profs['flux0'] = {comp_name: comp_flux0 / spec_norm_factor for comp_name, comp_flux0 in self.cont_profs['flux0'].items()}
     # Spectral uncertainties in the fit's chi^2: the quoted ones plus a floor, a fraction SPEC_UNC_FLOOR of the observed flux,
-    # in quadrature (0.01 for opt files without the option). check_fit_pars and the products keep the quoted ones
+    # in quadrature. check_fit_pars and the products keep the quoted ones
     spec_unc_floor = self.inopts['FIT OPTIONS'].get('SPEC_UNC_FLOOR', 0.01)
     spec_with_unc_floor = dict(spec, flux_unc=np.sqrt(spec['flux_unc']**2 + (spec_unc_floor * spec['flux'])**2))
     
@@ -678,10 +678,10 @@ class specmod:
         labels, label_counts = np.unique(tab[:,0], return_counts=True)
         if np.any(label_counts > 1):
             raise ValueError('Each photometric label must appear once. Repeated: ' + ', '.join(labels[label_counts > 1]))
-        widths = tab[:,4].astype(float)
-        if np.any(widths != 0):
+        filter_widths = tab[:,4].astype(float)
+        if np.any(filter_widths != 0):
             raise ValueError('Photometric points must be monochromatic (width 0): '
-                             + ', '.join(f'{label} (width {width:g} um)' for label, width in zip(tab[widths != 0, 0], widths[widths != 0])))
+                             + ', '.join(f'{label} (width {filter_width:g} um)' for label, filter_width in zip(tab[filter_widths != 0, 0], filter_widths[filter_widths != 0])))
         observed_waves = tab[:,1].astype(float)
         beyond_rest_limit = observed_waves / (1+self.z) > 1000.
         if np.any(beyond_rest_limit):
