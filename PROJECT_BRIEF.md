@@ -1054,7 +1054,7 @@ Each was found in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers a
   - Failing case and test in `tests/read_phot_checks/` (work folder):
     - before: an `IndexError` for a single valid point, and for a single point whose width the checks should refuse;
     - after: the single point reads with its exact values (0.75 µm, 2.5e-5 Jy, 1e-6 Jy at z = 1), the single bad point raises the width `ValueError`, and the five-point file reads exactly as before.
-  - *(Fixed on `dev` 2026-11-25, commit `71ae6e1`, awaiting my approval. No PR to GOALS.)*
+  - *(Fixed on `dev` 2026-11-25, commit `71ae6e1`; approved 2026-11-25. No PR to GOALS.)*
 - **G13: `save_asdf` uses an undefined `self`** (logged 2026-11-15; found by the static name check). `cafe_io.save_asdf(cafe, …)` writes to `self.cafe_dir + "output/last_unnamed_cafefit.asdf"` when `file_name` is None (`cafe_io.py:1138`, GOALS code, 2023), so that call raises a `NameError`; it would also write into the repo's `CAFE/output/`. `save_products` always passes `file_name`, so the normal workflow is not affected. Not fixed.
 - **G12: the single extraction's metadata records the background annulus from the keywords** (logged 2026-11-15; found by reading). `meta_dict` (`creta.py:351–353` at `8177bb6`) takes `bkg_r_in` and `bkg_an_w` from the keywords `r_ann_in` and `ann_width` (default `None`), not from the parameter file's values (`r_in`, `width`). Metadata only.
   - Failing case (real single extraction, `single_all_bkgmeta.txt` = `single_all.txt` with `r_ann_in = 0.8`, `ann_width = 0.3`, background subtraction off; on `eb89a4f`): the metadata string in the `.fits` table header records `'bkg_r_in': None, 'bkg_an_w': None`.
@@ -1840,7 +1840,9 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - Document the label convention and the two reference wavelengths in DESIGN.md and in the README. FAQ 4 in `docs/source/faqs.rst` was chosen over `README.rst`, which has no usage section.
   - *(Done 2026-11-25: commit `95aef4d`; approved the same day, with its comment reworded under the new comment rule, `52ac944`.)*
 - 2026-11-25: **Approve `95aef4d`, with its code comment reworded** to say what the code is for, not the current choices it enforces; the error messages stay. **Fix now the crash of `read_phot` on a file with a single point** (G17), its own commit with failing case, diff, reason and test. **Add G16 (`6e7aee1`) to DESIGN.md.**
-  - *(Done 2026-11-25: `52ac944` (comment), `71ae6e1` (G17), `f39333c` (DESIGN.md: G16, and G17 with it); awaiting my approval.)*
+  - *(Done 2026-11-25: `52ac944` (comment), `71ae6e1` (G17), `f39333c` (DESIGN.md: G16, and G17 with it); approved 2026-11-25.)*
+- 2026-11-25: **Commits `52ac944`, `71ae6e1` and `f39333c` approved.** **The comment audit's proposals approved as they are:** the three rewordings, dropping the parenthesis at `cafe.py:55`, and `widths`/`width` → `filter_widths`/`filter_width` in `read_phot`. One commit, shown hunk by hunk, with the `read_phot` test and the comment audit rerun. Then show what a push of `dev` to my fork would publish.
+  - *(Done 2026-11-25: `fd0ebbf`. The `read_phot` test passes (the valid file reads exactly as with `71ae6e1`). The audit's 71 lines differ only in the five reworded ones, and no line matches "as before", "yet", "for now", "decid", "chosen", "until", "currently", "temporar", "PAH_TAU = WRM_TAU" or "0.01 for".)*
 - 2026-11-25: **New project rule: code comments** (CLAUDE.md §11, `d3ffcd4`).
   - Comments describe the code's intent, briefly. A comment on a variable's definition may say what it holds and its units.
   - They never record a particular choice or decision made now ("for now", "only HST and ALMA", "as decided", "monochromatic only until…"). Those can be broadened later; decisions and their reasons belong in this brief.
@@ -1924,8 +1926,8 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - ALMA: the frequency the flux density refers to, i.e. the continuum image's reference frequency (CASA tclean `reffreq`, by default the middle of the selected range; `CRVAL3` in the FITS). Not the proposal's representative frequency, which is a planning parameter. Given in the file as c/ν in µm.
   - *(Decided 2026-11-25: no calibration floor; the label identifies the filter; the reference wavelengths as proposed; `read_phot`'s three checks in `95aef4d`. See "Decisions".)*
 - 2026-11-25: **Commit `95aef4d` (`read_phot`: repeated labels, widths other than 0, points beyond 1000 µm rest; DESIGN.md and FAQ 4)**, with its diff, reasons and test (`tests/read_phot_checks/`, work folder). Not pushed. *(Approved 2026-11-25, with its comment reworded; see "Decisions".)*
-- 2026-11-25: **Commits `52ac944` (`read_phot`'s comment reworded), `71ae6e1` (G17, `read_phot` with a single point) and `f39333c` (DESIGN.md: G16, G17)**, with their diffs, reasons and test. Not pushed.
-- 2026-11-25: **Comments that break the new rule (CLAUDE.md §11), with proposed rewordings** (`tests/comment_audit/comment_audit.py`, work folder; 71 comment and docstring lines added or changed in `.py` files since `legacy-2026-11`).
+- 2026-11-25: **Commits `52ac944` (`read_phot`'s comment reworded), `71ae6e1` (G17, `read_phot` with a single point) and `f39333c` (DESIGN.md: G16, G17)**, with their diffs, reasons and test. Not pushed. *(Approved 2026-11-25; see "Decisions".)*
+- 2026-11-25: **Comments that break the new rule (CLAUDE.md §11), with proposed rewordings** (`tests/comment_audit/comment_audit.py`, work folder; 71 comment and docstring lines added or changed in `.py` files since `legacy-2026-11`). *(Approved 2026-11-25 as proposed; done in `fd0ebbf`.)*
   - **Break it:**
     - `CRETA/cube_preproc.py:226–227` (`getRpixPointSource`'s `@instrument`): "NIRSpec: FWHM proportional to lambda (no law chosen yet), as before." → "NIRSpec: FWHM proportional to lambda."
     - `CRETA/cube_preproc.py:553–554` (`subtractUserBackground`): "(only point sources set a minimum; an extended source's annulus is built as before)" → "(only point sources set a minimum; an extended source always gets its annulus)".
@@ -1936,6 +1938,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
     - The comments of the CAFE opt files and the CRETA parameter files that describe options.
     - The old GOALS comments that our commits only moved or re-indented: `#exclude hidden files from mac`, `#stitch aperture`, `#Replace zero with NaN`, `#exclude the NaN`. Also the commented-out block at `CRETA/creta.py:1300–1312`, which belongs to M7's clean-up.
   - **Naming (CLAUDE.md §9), in my `read_phot` checks (`95aef4d`):** `widths` and `width` are names §9 lists as generic → `filter_widths` and `filter_width`.
+  - *(Approved 2026-11-25 as proposed; done in `fd0ebbf`.)*
 - 2026-11-19: **Commit `688a02a` (`flux0` = the median |flux| of its 20 channels)**, with its diff, reason and test (`tests/flux0_abs/`, work folder). Not pushed. DESIGN.md: `f4af609`.
   - Bit-identical: 108 windows with all 20 channels > 0 (10 noisy synthetic spectra, R1, R2) give the same `flux0` bit for bit.
   - Faint truth: CAFE's own continuum at the AGN inpars' starting values, with no lines and no PAHs. The S/N per channel falls log-linearly from 10 to 0.1, so it is 0.16 at 24 µm. Seeds 4, 7 and 19 are the first three whose COO window median is ≤ 0.
