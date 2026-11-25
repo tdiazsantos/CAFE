@@ -111,7 +111,7 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
    - Options (M3): `flux_scale` multiplies the fluxes and uncertainties; `ignore_DQ=True` sets all DQ masks to 0.
    - Side effect: when the input is not a CRETA cube, writes `./dummy.fits` into the current directory.
 2. **`read_phot(file_name, file_dir)`**: optional, after `read_spec` (it uses z). Sorts the points by wavelength (M3).
-   - The file has five columns: label, wavelength [µm], flux density [Jy], uncertainty [Jy], width [µm].
+   - The file has five columns: label, wavelength [µm], flux density [Jy], uncertainty [Jy], width [µm]. A file with a single point is read as one row (G17, `71ae6e1`).
    - The label identifies the filter: instrument and filter in one string without spaces, e.g. `HST_WFC3IR_F160W` or `ALMA_B7`. Future filter curves will be keyed on it.
    - Photometry is HST and ALMA, monochromatic only (2026-11-25).
      - HST points are given at the filter's pivot wavelength (`PHOTPLAM`).
@@ -143,6 +143,8 @@ Each fit reads two files, both with `cafe_io.read_inifile`.
         - It also fixes every free parameter that no longer affects the model, since lmfit returns no error bars while such a parameter is free (M4). These are all other parameters of a component whose `_FLX` is 0, and the `MIX` and `COV` of a component whose `_TAU` is 0. A parameter that another component's expression uses stays free (`WRM_TAU` in `PAH_TAU = WRM_TAU`). The onion ratios `HOT_WRM` and `WRM_COO` have their own check before it.
       - On a refit, the scaling parameters (`Peak`, `FLX`, `TMP`, `TAU`, `RAT`) are perturbed by 1% and the fit is repeated, up to `MAX_LOOPS` times.
    5. `parobj2parcube` stores the results. `get_model_fluxes(comps=True)` gives the component spectra. `CompFluxes_0` includes `fFTS0`, the intrinsic PAHs plus lines (M3).
+      - Lines are dimmed by the PAH extinction: `fLIN = extPAH ×` the Gaussians, where `extPAH` comes from `PAH_TAU`, `PAH_MIX` and `PAH_COV`. The shipped inpars files tie `PAH_TAU` to `WRM_TAU`.
+      - With the PAH component off (`PAH_FLX = 0`), `extPAH = 1` in both paths (`comps` True or False), so the lines are not dimmed (G16, `6e7aee1`). Before, the `comps=False` path, which the fit uses, stopped with a `NameError`.
    6. `save_products` writes the outputs.
 4. **Outputs:** `<name>_parcube.fits`, the continuum cube, `_fitpars.ini`, `_cafefit.asdf`, `_fitfigure.png`, `_pahtable.ecsv` and `_linetable.ecsv`.
    - The continuum cube (`_contcube`, M3) has 10 profile extensions: `fCON`, `fDSK`, `fHOT`, `fWRM` and `fCOO` (extinguished, from `CompFluxes`), and `fCON0` … `fCOO0` (intrinsic, from `CompFluxes_0`; `make_profcube`'s `'Comp_0'`). The first was called `fCon` before M3. It is built on the fit's model grid, which includes the photometry when photometry is fitted.
