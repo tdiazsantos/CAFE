@@ -672,7 +672,7 @@ class specmod:
         #self.pwidths = tab['width']
 
         print('Phot data:',file_dir+file_name)
-        tab = np.genfromtxt(file_dir+file_name, comments='#', dtype='str')
+        tab = np.atleast_2d(np.genfromtxt(file_dir+file_name, comments='#', dtype='str'))
         tab = tab[np.argsort(tab[:,1].astype(float))]
         # Check the points before storing them; each error names the points concerned
         labels, label_counts = np.unique(tab[:,0], return_counts=True)
