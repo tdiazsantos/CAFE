@@ -1044,7 +1044,7 @@ Each was found in GOALS `master` (`ca10c84`) as well as in `dev`. Line numbers a
     - before the fix: the `NameError`;
     - after it: the `comps=False` model equals the sum of the `comps=True` components exactly; fPAH = 0; extPAH = 1; fLIN equals the line's unextincted Gaussian exactly;
     - with `PAH_FLX = 1`, the model is bit-identical before and after.
-  - *(Fixed on `dev` 2026-11-24, commit `6e7aee1`, awaiting my approval. No PR to GOALS.)*
+  - *(Fixed on `dev` 2026-11-24, commit `6e7aee1`; approved 2026-11-25. No PR to GOALS.)*
 - **G13: `save_asdf` uses an undefined `self`** (logged 2026-11-15; found by the static name check). `cafe_io.save_asdf(cafe, …)` writes to `self.cafe_dir + "output/last_unnamed_cafefit.asdf"` when `file_name` is None (`cafe_io.py:1138`, GOALS code, 2023), so that call raises a `NameError`; it would also write into the repo's `CAFE/output/`. `save_products` always passes `file_name`, so the normal workflow is not affected. Not fixed.
 - **G12: the single extraction's metadata records the background annulus from the keywords** (logged 2026-11-15; found by reading). `meta_dict` (`creta.py:351–353` at `8177bb6`) takes `bkg_r_in` and `bkg_an_w` from the keywords `r_ann_in` and `ann_width` (default `None`), not from the parameter file's values (`r_in`, `width`). Metadata only.
   - Failing case (real single extraction, `single_all_bkgmeta.txt` = `single_all.txt` with `r_ann_in = 0.8`, `ann_width = 0.3`, background subtraction off; on `eb89a4f`): the metadata string in the `.fits` table header records `'bkg_r_in': None, 'bkg_an_w': None`.
@@ -1812,6 +1812,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
   - **The PSF-based aperture correction becomes part of M8.** It won't wait for PSFs here; the "when W2246's PSF arrives" to-do is closed.
   - **G16 fixed now:** own commit, failing case first, diff hunk by hunk with its reason, and a test.
   - **Photometry for now: HST and ALMA only, monochromatic only, so no filter curves.** Plan first, no code: a calibration floor per instrument, points beyond 1000 µm rest not used, and the reference wavelength of a monochromatic point (see "Awaiting my OK").
+- 2026-11-25: **Commit `6e7aee1` (G16) approved as it is.** With `PAH_FLX = 0` the lines are not dimmed, in both paths of `get_model_fluxes`.
 - 2026-11-06: **Exception to the testing rule, for the six M2 fixes only.** They are evident fixes: check them by reading and the import smoke test only, with no data tests.
   - Before this, a few data tests had started. They stay in the work folder:
     - `tests/m2/test_numpy_attrs.py`, a static scan for NumPy attributes that the installed NumPy lacks: 4 hits before #1 (the `np.NaN` lines), 0 after;
@@ -1861,7 +1862,7 @@ All entries are dated. Record a decision only after I approve it. Log biases as 
 - 2026-11-17: **A component's TAU at 0: fix its MIX and COV too?** (from M4 step 1) The model skips a component's extinction when its TAU is 0 (`if p["STB_TAU"] > 0: … else: ext = 1`), so MIX and COV then have no effect, as the other parameters do when `_FLX` is 0. `check_fit_pars` fixes the TAU at 0 but leaves MIX and COV free: a free parameter with no effect, so no error bars and a refit. Free in the shipped inpars: `STB_COV` (SB, nirspec-miri SB, IIZw096). Recommended: yes, the same rule as for `_FLX`. *(Decided 2026-11-17: yes, under one principle; see "Decisions".)*
 - 2026-11-17: **Keep a parameter free when another component's expression uses it?** (from M4 step 1) All 7 shipped inpars tie `PAH_TAU` to `WRM_TAU`. When `WRM_FLX` reaches 0, `check_fit_pars` fixes `WRM_TAU` (before and after `d6bd782`), although it still sets the PAH extinction. Recommended: the zero-flux (and zero-TAU) freeze leaves free any parameter that a parameter of another component uses in its expression. *(Decided 2026-11-17: yes, under one principle; see "Decisions".)*
 - 2026-11-19: **Commits `3fd7e7e` (`mask_spec`, G15) and `5e70c62` (`init_feats` peak estimate)**, with their diffs, reasons and tests. Not pushed. *(Approved 2026-11-19; see "Decisions".)*
-- 2026-11-24: **Commit `6e7aee1` (G16, `get_model_fluxes` with `PAH_FLX = 0`)**, with its diff, reason and test. Not pushed.
+- 2026-11-24: **Commit `6e7aee1` (G16, `get_model_fluxes` with `PAH_FLX = 0`)**, with its diff, reason and test. Not pushed. *(Approved 2026-11-25; see "Decisions".)*
 - 2026-11-24: **The NIRSpec FWHM law for CRETA's cones** (see "Later" for the sources). The options:
   - (a) D'Eugenio et al. 2024, along and across the slices, combined (e.g. their geometric mean) or the along-slice one;
   - (b) Pascalau et al. 2026 (STPSF-based, circular);
