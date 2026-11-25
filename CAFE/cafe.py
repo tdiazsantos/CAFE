@@ -674,8 +674,7 @@ class specmod:
         print('Phot data:',file_dir+file_name)
         tab = np.genfromtxt(file_dir+file_name, comments='#', dtype='str')
         tab = tab[np.argsort(tab[:,1].astype(float))]
-        # Each label (instrument and filter, e.g. HST_WFC3IR_F160W) appears once; the points are monochromatic (width 0);
-        # none lies beyond 1000 um rest, where CAFE's source SEDs and grain tables end
+        # Check the points before storing them; each error names the points concerned
         labels, label_counts = np.unique(tab[:,0], return_counts=True)
         if np.any(label_counts > 1):
             raise ValueError('Each photometric label must appear once. Repeated: ' + ', '.join(labels[label_counts > 1]))
